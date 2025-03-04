@@ -42,7 +42,7 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
   };
 
   return (
-    <div className="w-full h-full min-h-[600px] bg-dark-400 rounded-lg overflow-hidden">
+    <div className="w-full h-full bg-dark-400 rounded-lg overflow-hidden flex flex-col">
       {/* Przyciski przełączania platform */}
       <div className="p-4 bg-dark-300">
         <div className="flex gap-2">
@@ -73,7 +73,7 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
       </div>
 
       {/* Kontener czatu */}
-      <div className="w-full h-[calc(100%-4rem)]">
+      <div className="flex-grow" style={{ height: 'calc(100% - 4rem)' }}>
         {embedUrl && (
           <iframe
             src={embedUrl}

@@ -29,9 +29,9 @@ export default function Home() {
               <span className="gradient-text">NieUmiemGrac.pl</span>
             </h1>
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="stream-chat-container">
               {/* Stream Embed */}
-              <div className="lg:col-span-2">
+              <div>
                 <StreamEmbed 
                   twitchChannel="nie_umiem_grac_jednak" 
                   youtubeChannel="UCuhEFa4jQBOa5UOAJ52sa0g" 
@@ -41,7 +41,7 @@ export default function Home() {
               </div>
               
               {/* Chat Embed */}
-              <div className="h-[600px]">
+              <div className="h-full">
                 <ChatEmbed 
                   twitchChannel="nie_umiem_grac_jednak" 
                   youtubeVideoId="live_stream"

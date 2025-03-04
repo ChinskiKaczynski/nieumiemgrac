@@ -70,11 +70,11 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
       </div>
 
       {/* Kontener streama */}
-      <div className="relative pt-[56.25%] w-full bg-dark-400 rounded-lg overflow-hidden">
+      <div className="responsive-iframe-container bg-dark-400 rounded-lg overflow-hidden">
         {embedUrl && (
           <iframe
             src={embedUrl}
-            className="absolute top-0 left-0 w-full h-full"
+            className="responsive-iframe"
             frameBorder="0"
             allowFullScreen
             allow="autoplay; encrypted-media"

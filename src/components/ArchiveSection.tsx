@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FaTwitch, FaYoutube, FaPlay, FaClock, FaEye } from 'react-icons/fa';
+import { getTwitchVideos } from '@/lib/twitch';
+import { getYouTubeVideos, formatYouTubeDuration, formatViewCount } from '@/lib/youtube';
 
 type ArchivePlatform = 'twitch' | 'youtube';
 
@@ -17,97 +19,65 @@ interface VideoItem {
   platform: ArchivePlatform;
 }
 
-// Przykładowe dane - w rzeczywistości będą pobierane z API
-const MOCK_VIDEOS: VideoItem[] = [
-  {
-    id: '1',
-    title: 'Gramy w Minecraft - budujemy bazę!',
-    thumbnail: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_nie_umiem_grac_jednak-320x180.jpg',
-    url: 'https://twitch.tv/videos/123456789',
-    views: 1250,
-    duration: '3:45:20',
-    date: '2025-02-28',
-    platform: 'twitch'
-  },
-  {
-    id: '2',
-    title: 'CS:GO - droga do Global Elite',
-    thumbnail: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_nie_umiem_grac_jednak-320x180.jpg',
-    url: 'https://twitch.tv/videos/123456790',
-    views: 980,
-    duration: '2:30:15',
-    date: '2025-02-26',
-    platform: 'twitch'
-  },
-  {
-    id: '3',
-    title: 'Valorant z widzami - przyjdź pograć!',
-    thumbnail: 'https://i.ytimg.com/vi/abcdefgh/maxresdefault.jpg',
-    url: 'https://youtube.com/watch?v=abcdefgh',
-    views: 2300,
-    duration: '4:10:30',
-    date: '2025-02-25',
-    platform: 'youtube'
-  },
-  {
-    id: '4',
-    title: 'Fortnite - nowy sezon, nowe porażki',
-    thumbnail: 'https://i.ytimg.com/vi/ijklmnop/maxresdefault.jpg',
-    url: 'https://youtube.com/watch?v=ijklmnop',
-    views: 1800,
-    duration: '3:20:45',
-    date: '2025-02-23',
-    platform: 'youtube'
-  },
-];
-
 const ArchiveSection: React.FC = () => {
   const [platform, setPlatform] = useState<ArchivePlatform>('twitch');
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Symulacja ładowania danych z API
-    setIsLoading(true);
+    async function fetchVideos() {
+      setIsLoading(true);
+      
+      try {
+        if (platform === 'twitch') {
+          // Pobierz VODy z Twitch
+          const twitchVideos = await getTwitchVideos();
+          
+          const formattedVideos: VideoItem[] = twitchVideos.map(video => ({
+            id: video.id,
+            title: video.title,
+            thumbnail: video.thumbnail_url.replace('{width}', '320').replace('{height}', '180'),
+            url: video.url,
+            views: video.view_count,
+            duration: video.duration, // Twitch zwraca już sformatowany czas
+            date: new Date(video.created_at).toISOString().split('T')[0],
+            platform: 'twitch'
+          }));
+          
+          setVideos(formattedVideos);
+        } else {
+          // Pobierz VODy z YouTube
+          const youtubeVideos = await getYouTubeVideos();
+          
+          const formattedVideos: VideoItem[] = youtubeVideos.map(video => ({
+            id: video.id,
+            title: video.title,
+            thumbnail: video.thumbnails.maxres?.url || 
+                      video.thumbnails.standard?.url || 
+                      video.thumbnails.high.url,
+            url: `https://youtube.com/watch?v=${video.id}`,
+            views: video.viewCount || 0,
+            duration: formatYouTubeDuration(video.duration || 'PT0S'),
+            date: new Date(video.publishedAt).toISOString().split('T')[0],
+            platform: 'youtube'
+          }));
+          
+          setVideos(formattedVideos);
+        }
+      } catch (error) {
+        console.error('Błąd podczas pobierania filmów:', error);
+        setVideos([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
     
-    // W rzeczywistej implementacji, tutaj byłoby wywołanie API
-    setTimeout(() => {
-      const filteredVideos = MOCK_VIDEOS.filter(video => video.platform === platform);
-      setVideos(filteredVideos);
-      setIsLoading(false);
-    }, 1000);
-    
-    // Rzeczywista implementacja z API Twitch/YouTube będzie wyglądać tak:
-    // async function fetchVideos() {
-    //   try {
-    //     let data;
-    //     if (platform === 'twitch') {
-    //       // Wywołanie API Twitch
-    //       const response = await fetch('/api/twitch-videos?channel=nie_umiem_grac_jednak');
-    //       data = await response.json();
-    //     } else {
-    //       // Wywołanie API YouTube
-    //       const response = await fetch('/api/youtube-videos');
-    //       data = await response.json();
-    //     }
-    //     setVideos(data);
-    //   } catch (error) {
-    //     console.error('Błąd podczas pobierania filmów:', error);
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // }
-    // 
-    // fetchVideos();
+    fetchVideos();
   }, [platform]);
 
+  // Funkcja do formatowania liczby wyświetleń
   const formatViews = (views: number): string => {
-    if (views >= 1000000) {
-      return `${(views / 1000000).toFixed(1)}M`;
-    } else if (views >= 1000) {
-      return `${(views / 1000).toFixed(1)}K`;
-    }
-    return views.toString();
+    return formatViewCount(views);
   };
 
   return (
