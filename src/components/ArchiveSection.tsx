@@ -70,12 +70,35 @@ const ArchiveSection: React.FC = () => {
     // Symulacja ładowania danych z API
     setIsLoading(true);
     
-    // Używamy tylko przykładowych danych
+    // W rzeczywistej implementacji, tutaj byłoby wywołanie API
     setTimeout(() => {
       const filteredVideos = MOCK_VIDEOS.filter(video => video.platform === platform);
       setVideos(filteredVideos);
       setIsLoading(false);
     }, 1000);
+    
+    // Rzeczywista implementacja z API Twitch/YouTube będzie wyglądać tak:
+    // async function fetchVideos() {
+    //   try {
+    //     let data;
+    //     if (platform === 'twitch') {
+    //       // Wywołanie API Twitch
+    //       const response = await fetch('/api/twitch-videos?channel=nie_umiem_grac_jednak');
+    //       data = await response.json();
+    //     } else {
+    //       // Wywołanie API YouTube
+    //       const response = await fetch('/api/youtube-videos');
+    //       data = await response.json();
+    //     }
+    //     setVideos(data);
+    //   } catch (error) {
+    //     console.error('Błąd podczas pobierania filmów:', error);
+    //   } finally {
+    //     setIsLoading(false);
+    //   }
+    // }
+    // 
+    // fetchVideos();
   }, [platform]);
 
   const formatViews = (views: number): string => {

@@ -15,12 +15,23 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
   platform = 'twitch',
   onPlatformChange,
 }) => {
+  const [embedUrl, setEmbedUrl] = useState('');
   const [currentPlatform, setCurrentPlatform] = useState(platform);
 
   // Synchronizacja z zewnętrznym stanem
   useEffect(() => {
     setCurrentPlatform(platform);
   }, [platform]);
+
+  useEffect(() => {
+    const hostname = window?.location?.hostname || 'localhost';
+    const twitchChatUrl = `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${hostname}`;
+    const youtubeChatUrl = youtubeVideoId 
+      ? `https://www.youtube.com/live_chat?v=${youtubeVideoId}&embed_domain=${hostname}`
+      : '';
+    
+    setEmbedUrl(currentPlatform === 'twitch' ? twitchChatUrl : youtubeChatUrl);
+  }, [twitchChannel, youtubeVideoId, currentPlatform]);
 
   // Funkcja do zmiany platformy
   const handlePlatformChange = (newPlatform: 'twitch' | 'youtube') => {
@@ -30,19 +41,8 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     }
   };
 
-  // Generowanie URL czatu
-  const getChatUrl = () => {
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-    
-    if (currentPlatform === 'twitch') {
-      return `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${hostname}`;
-    } else {
-      return `https://www.youtube.com/live_chat?v=${youtubeVideoId || 'live_stream'}&embed_domain=${hostname}`;
-    }
-  };
-
   return (
-    <div className="w-full h-full bg-dark-400 rounded-lg overflow-hidden">
+    <div className="w-full h-full min-h-[600px] bg-dark-400 rounded-lg overflow-hidden">
       {/* Przyciski przełączania platform */}
       <div className="p-4 bg-dark-300">
         <div className="flex gap-2">
@@ -58,10 +58,13 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
           </button>
           <button
             onClick={() => handlePlatformChange('youtube')}
+            disabled={!youtubeVideoId}
             className={`px-4 py-2 rounded-full font-medium transition-colors ${
               currentPlatform === 'youtube'
                 ? 'bg-red-600 text-white'
-                : 'bg-dark-400 text-light-300 hover:bg-dark-200'
+                : youtubeVideoId
+                ? 'bg-dark-400 text-light-300 hover:bg-dark-200'
+                : 'bg-dark-400 text-light-500 cursor-not-allowed'
             }`}
           >
             YouTube Chat
@@ -71,11 +74,18 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
 
       {/* Kontener czatu */}
       <div className="w-full h-[calc(100%-4rem)]">
-        <iframe
-          src={getChatUrl()}
-          className="w-full h-full"
-          frameBorder="0"
-        />
+        {embedUrl && (
+          <iframe
+            src={embedUrl}
+            className="w-full h-full"
+            frameBorder="0"
+          />
+        )}
+        {currentPlatform === 'youtube' && !youtubeVideoId && (
+          <div className="w-full h-full flex items-center justify-center text-light-400">
+            Chat YouTube będzie dostępny podczas aktywnego streamu
+          </div>
+        )}
       </div>
     </div>
   );
