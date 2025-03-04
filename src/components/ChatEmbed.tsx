@@ -41,8 +41,15 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     }
   };
 
+  // Dodajemy style zgodnie z instrukcją
+  const chatContainerStyle = {
+    aspectRatio: '9 / 12.05',
+    width: '100%',
+    height: '100%'
+  };
+
   return (
-    <div className="w-full h-full min-h-[600px] bg-dark-400 rounded-lg overflow-hidden">
+    <div className="w-full h-full bg-dark-400 rounded-lg overflow-hidden">
       {/* Przyciski przełączania platform */}
       <div className="p-4 bg-dark-300">
         <div className="flex gap-2">
@@ -58,13 +65,10 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
           </button>
           <button
             onClick={() => handlePlatformChange('youtube')}
-            disabled={!youtubeVideoId}
             className={`px-4 py-2 rounded-full font-medium transition-colors ${
               currentPlatform === 'youtube'
                 ? 'bg-red-600 text-white'
-                : youtubeVideoId
-                ? 'bg-dark-400 text-light-300 hover:bg-dark-200'
-                : 'bg-dark-400 text-light-500 cursor-not-allowed'
+                : 'bg-dark-400 text-light-300 hover:bg-dark-200'
             }`}
           >
             YouTube Chat
@@ -73,12 +77,13 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
       </div>
 
       {/* Kontener czatu */}
-      <div className="w-full h-[calc(100%-4rem)]">
+      <div className="w-full h-[calc(100%-4rem)]" style={chatContainerStyle}>
         {embedUrl && (
           <iframe
             src={embedUrl}
             className="w-full h-full"
             frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           />
         )}
         {currentPlatform === 'youtube' && !youtubeVideoId && (

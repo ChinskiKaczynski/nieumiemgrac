@@ -44,9 +44,9 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
   };
 
   return (
-    <div className="relative w-full">
-      {/* Przyciski przełączania platform */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
+    <div className="w-full">
+      {/* Przyciski przełączania platform - przeniesione nad stream */}
+      <div className="flex justify-end mb-2 gap-2">
         <button
           onClick={() => handlePlatformChange('twitch')}
           className={`px-4 py-2 rounded-full font-medium transition-colors ${
@@ -77,7 +77,7 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
             className="absolute top-0 left-0 w-full h-full"
             frameBorder="0"
             allowFullScreen
-            allow="autoplay; encrypted-media"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           />
         )}
       </div>
