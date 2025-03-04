@@ -15,23 +15,12 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
   platform = 'twitch',
   onPlatformChange,
 }) => {
-  const [embedUrl, setEmbedUrl] = useState('');
   const [currentPlatform, setCurrentPlatform] = useState(platform);
 
   // Synchronizacja z zewnętrznym stanem
   useEffect(() => {
     setCurrentPlatform(platform);
   }, [platform]);
-
-  useEffect(() => {
-    const hostname = window?.location?.hostname || 'localhost';
-    const twitchChatUrl = `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${hostname}`;
-    const youtubeChatUrl = youtubeVideoId 
-      ? `https://www.youtube.com/live_chat?v=${youtubeVideoId}&embed_domain=${hostname}`
-      : '';
-    
-    setEmbedUrl(currentPlatform === 'twitch' ? twitchChatUrl : youtubeChatUrl);
-  }, [twitchChannel, youtubeVideoId, currentPlatform]);
 
   // Funkcja do zmiany platformy
   const handlePlatformChange = (newPlatform: 'twitch' | 'youtube') => {
@@ -41,11 +30,15 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     }
   };
 
-  // Dodajemy style zgodnie z instrukcją
-  const chatContainerStyle = {
-    aspectRatio: '9 / 12.05',
-    width: '100%',
-    height: '100%'
+  // Generowanie URL czatu
+  const getChatUrl = () => {
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    
+    if (currentPlatform === 'twitch') {
+      return `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${hostname}`;
+    } else {
+      return `https://www.youtube.com/live_chat?v=${youtubeVideoId || 'live_stream'}&embed_domain=${hostname}`;
+    }
   };
 
   return (
@@ -77,20 +70,12 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
       </div>
 
       {/* Kontener czatu */}
-      <div className="w-full h-[calc(100%-4rem)]" style={chatContainerStyle}>
-        {embedUrl && (
-          <iframe
-            src={embedUrl}
-            className="w-full h-full"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          />
-        )}
-        {currentPlatform === 'youtube' && !youtubeVideoId && (
-          <div className="w-full h-full flex items-center justify-center text-light-400">
-            Chat YouTube będzie dostępny podczas aktywnego streamu
-          </div>
-        )}
+      <div className="w-full h-[calc(100%-4rem)]">
+        <iframe
+          src={getChatUrl()}
+          className="w-full h-full"
+          frameBorder="0"
+        />
       </div>
     </div>
   );
