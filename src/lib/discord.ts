@@ -41,10 +41,10 @@ export interface DiscordEmbed {
 
 // Konfiguracja
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/example/placeholder';
-const STREAMER_NAME = 'NieUmiemGrac';
-const STREAMER_AVATAR = 'https://nieumiemgrac.pl/logo.png';
-const WEBSITE_URL = 'https://nieumiemgrac.pl';
-const YOUTUBE_CHANNEL_ID = 'UC_x5XG1OV2P6uZZ5FSM9Ttw'; // Przykładowe ID kanału - zmień na swoje
+const STREAMER_NAME = process.env.STREAMER_NAME || 'NieUmiemGrac';
+const STREAMER_AVATAR = process.env.STREAMER_AVATAR || 'https://nieumiemgrac.pl/logo.png';
+const WEBSITE_URL = process.env.WEBSITE_URL || 'https://nieumiemgrac.pl';
+const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || 'UCuhEFa4jQBOa5UOAJ52sa0g';
 
 // Kolory dla różnych platform
 const TWITCH_COLOR = 0x6441a5; // Fioletowy kolor Twitch
@@ -65,7 +65,7 @@ export async function sendTwitchStreamNotification(stream: TwitchStream): Promis
     const message: DiscordWebhookMessage = {
       username: `${STREAMER_NAME} Bot`,
       avatar_url: STREAMER_AVATAR,
-      content: '@everyone **NieUmiemGrac jest teraz na żywo na Twitch!**',
+      content: `@everyone **${STREAMER_NAME} jest teraz na żywo na Twitch!**`,
       embeds: [
         {
           title: stream.title,
@@ -97,12 +97,12 @@ export async function sendTwitchStreamNotification(stream: TwitchStream): Promis
             },
             {
               name: '🌐 Oglądaj na stronie',
-              value: `[nieumiemgrac.pl](${WEBSITE_URL})`,
+              value: `[${WEBSITE_URL.replace('https://', '')}](${WEBSITE_URL})`,
               inline: true,
             },
           ],
           footer: {
-            text: 'NieUmiemGrac.pl - Oficjalna strona',
+            text: `${STREAMER_NAME} - Oficjalna strona`,
             icon_url: STREAMER_AVATAR,
           },
         },
@@ -132,7 +132,7 @@ export async function sendYouTubeStreamNotification(stream: YouTubeLiveStream): 
     const message: DiscordWebhookMessage = {
       username: `${STREAMER_NAME} Bot`,
       avatar_url: STREAMER_AVATAR,
-      content: '@everyone **NieUmiemGrac jest teraz na żywo na YouTube!**',
+      content: `@everyone **${STREAMER_NAME} jest teraz na żywo na YouTube!**`,
       embeds: [
         {
           title: stream.title,
@@ -159,12 +159,12 @@ export async function sendYouTubeStreamNotification(stream: YouTubeLiveStream): 
             },
             {
               name: '🌐 Oglądaj na stronie',
-              value: `[nieumiemgrac.pl](${WEBSITE_URL})`,
+              value: `[${WEBSITE_URL.replace('https://', '')}](${WEBSITE_URL})`,
               inline: true,
             },
           ],
           footer: {
-            text: 'NieUmiemGrac.pl - Oficjalna strona',
+            text: `${STREAMER_NAME} - Oficjalna strona`,
             icon_url: STREAMER_AVATAR,
           },
         },
@@ -195,7 +195,7 @@ export async function sendYouTubeVideoNotification(
     const message: DiscordWebhookMessage = {
       username: `${STREAMER_NAME} Bot`,
       avatar_url: STREAMER_AVATAR,
-      content: '**Nowy film na kanale NieUmiemGrac!**',
+      content: `**Nowy film na kanale ${STREAMER_NAME}!**`,
       embeds: [
         {
           title: videoTitle,
@@ -215,7 +215,7 @@ export async function sendYouTubeVideoNotification(
             icon_url: 'https://www.youtube.com/s/desktop/3a84d4c0/img/favicon_32.png',
           },
           footer: {
-            text: 'NieUmiemGrac.pl - Oficjalna strona',
+            text: `${STREAMER_NAME} - Oficjalna strona`,
             icon_url: STREAMER_AVATAR,
           },
         },
@@ -268,7 +268,7 @@ export async function sendStreamScheduleNotification(
     const message: DiscordWebhookMessage = {
       username: `${STREAMER_NAME} Bot`,
       avatar_url: STREAMER_AVATAR,
-      content: `**NieUmiemGrac zaplanował stream na ${platformName}!**`,
+      content: `**${STREAMER_NAME} zaplanował stream na ${platformName}!**`,
       embeds: [
         {
           title: title,
@@ -307,12 +307,12 @@ export async function sendStreamScheduleNotification(
             }] : []),
             {
               name: '🌐 Oglądaj na stronie',
-              value: `[nieumiemgrac.pl](${WEBSITE_URL})`,
+              value: `[${WEBSITE_URL.replace('https://', '')}](${WEBSITE_URL})`,
               inline: true,
             },
           ],
           footer: {
-            text: 'NieUmiemGrac.pl - Oficjalna strona',
+            text: `${STREAMER_NAME} - Oficjalna strona`,
             icon_url: STREAMER_AVATAR,
           },
         },

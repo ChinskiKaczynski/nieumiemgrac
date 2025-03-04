@@ -110,8 +110,8 @@ interface YouTubeVideoItem {
 }
 
 // Konfiguracja
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
-const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID; // Przykładowe ID kanału Google Developers - zmień na swoje
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
+const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || 'UCuhEFa4jQBOa5UOAJ52sa0g'; // Domyślne ID kanału, jeśli nie podano w zmiennych środowiskowych
 
 // Funkcja do sprawdzenia, czy kanał jest aktualnie na żywo
 export async function checkYouTubeLiveStatus(channelId: string = YOUTUBE_CHANNEL_ID): Promise<YouTubeLiveStream | null> {

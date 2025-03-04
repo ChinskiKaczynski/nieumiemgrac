@@ -68,7 +68,7 @@ export interface TwitchUser {
 // Konfiguracja
 const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID || '5ss3llyo0kduksikksfa1re7jbt4ja';
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET || 'hn49c6ocqvpbg49ray7nsmjqokunje';
-const TWITCH_CHANNEL_NAME = 'nie_umiem_grac_jednak'; // Nazwa kanału Twitch
+const TWITCH_CHANNEL_NAME = process.env.TWITCH_CHANNEL_NAME || 'nie_umiem_grac_jednak'; // Nazwa kanału Twitch
 
 // Funkcja do uzyskania tokenu dostępu
 let accessToken = '';
