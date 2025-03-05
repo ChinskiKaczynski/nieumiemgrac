@@ -13,15 +13,6 @@ interface StreamEmbedProps {
   hideControls?: boolean;
 }
 
-// Tablica przykładowych ID streamów YouTube do testowania
-const TEST_VIDEO_IDS = [
-  'zf2XF-259BA',
-  'dQw4w9WgXcQ', // Rick Astley - Never Gonna Give You Up
-  'jNQXAC9IVRw', // Me at the zoo
-  'hHW1oY26kxQ', // Gangnam Style
-  'JGwWNGJdvx8', // Shape of You
-];
-
 const StreamEmbed: React.FC<StreamEmbedProps> = ({
   twitchChannel,
   youtubeChannel,
@@ -35,7 +26,6 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
   const [currentPlatform, setCurrentPlatform] = useState(platform);
   const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
   const [isLoadingYoutubeId, setIsLoadingYoutubeId] = useState(false);
-  const [testIdIndex, setTestIdIndex] = useState(0); // Indeks dla testowych ID
 
   // Synchronizacja z zewnętrznym stanem
   useEffect(() => {
@@ -43,56 +33,40 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
   }, [platform]);
 
   // Funkcja do pobierania ID streamu YouTube
-  const fetchYoutubeStreamId = async (forceTestId: boolean = false) => {
+  const fetchYoutubeStreamId = async () => {
     if (currentPlatform !== 'youtube') return;
     
     setIsLoadingYoutubeId(true);
     try {
-      // Jeśli wymuszamy użycie testowego ID lub jesteśmy w trybie testowym
-      if (forceTestId || process.env.NODE_ENV === 'development') {
-        // Użyj kolejnego testowego ID
-        const nextId = TEST_VIDEO_IDS[testIdIndex];
-        
-        // Zwiększ indeks dla następnego wywołania
-        setTestIdIndex((prevIndex) => (prevIndex + 1) % TEST_VIDEO_IDS.length);
-        
-        console.log('Używam testowego ID streamu YouTube:', nextId);
-        setYoutubeVideoId(nextId);
+      console.log('Pobieranie ID streamu YouTube...');
+      // Pobierz ID aktualnego streamu lub najnowszego filmu
+      const streamId = await getLiveStreamId(youtubeChannel);
+      
+      // Jeśli mamy ID streamu, użyj go
+      if (streamId) {
+        console.log('Pobrano ID streamu YouTube:', streamId);
+        setYoutubeVideoId(streamId);
         
         // Przekaż ID streamu do komponentu nadrzędnego
         if (onYoutubeVideoIdChange) {
-          onYoutubeVideoIdChange(nextId);
+          onYoutubeVideoIdChange(streamId);
         }
       } else {
-        // Standardowe pobieranie ID streamu
-        const streamId = await getLiveStreamId(youtubeChannel);
+        // Jeśli nie ma aktualnego streamu ani najnowszego filmu, użyj przykładowego ID
+        const fallbackId = 'dQw4w9WgXcQ'; // Rick Astley - Never Gonna Give You Up
+        console.log('Nie znaleziono streamu ani filmu, używam przykładowego ID:', fallbackId);
+        setYoutubeVideoId(fallbackId);
         
-        // Jeśli mamy ID streamu, użyj go
-        if (streamId) {
-          console.log('Pobrano nowe ID streamu YouTube:', streamId);
-          setYoutubeVideoId(streamId);
-          
-          // Przekaż ID streamu do komponentu nadrzędnego
-          if (onYoutubeVideoIdChange) {
-            onYoutubeVideoIdChange(streamId);
-          }
-        } else {
-          // Jeśli nie ma aktualnego streamu, użyj przykładowego ID
-          const fallbackId = TEST_VIDEO_IDS[0];
-          console.log('Brak aktualnego streamu, używam przykładowego ID:', fallbackId);
-          setYoutubeVideoId(fallbackId);
-          
-          // Przekaż ID streamu do komponentu nadrzędnego
-          if (onYoutubeVideoIdChange) {
-            onYoutubeVideoIdChange(fallbackId);
-          }
+        // Przekaż ID streamu do komponentu nadrzędnego
+        if (onYoutubeVideoIdChange) {
+          onYoutubeVideoIdChange(fallbackId);
         }
       }
     } catch (error) {
       console.error('Błąd podczas pobierania ID streamu YouTube:', error);
       
       // W przypadku błędu, użyj przykładowego ID
-      const fallbackId = TEST_VIDEO_IDS[0];
+      const fallbackId = 'dQw4w9WgXcQ'; // Rick Astley - Never Gonna Give You Up
       setYoutubeVideoId(fallbackId);
       
       // Przekaż ID streamu do komponentu nadrzędnego
@@ -108,7 +82,7 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
   useEffect(() => {
     // Pobierz ID streamu od razu, jeśli platforma to YouTube
     if (currentPlatform === 'youtube') {
-      fetchYoutubeStreamId(true); // Wymuszamy użycie testowego ID
+      fetchYoutubeStreamId();
     }
   }, [currentPlatform, youtubeChannel]);
 
@@ -118,7 +92,7 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && currentPlatform === 'youtube') {
         console.log('Karta stała się aktywna, odświeżam ID streamu YouTube...');
-        fetchYoutubeStreamId(true); // Wymuszamy użycie testowego ID
+        fetchYoutubeStreamId();
       }
     };
 
@@ -158,13 +132,13 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
     
     // Jeśli zmieniamy na YouTube, pobierz ID streamu
     if (newPlatform === 'youtube') {
-      fetchYoutubeStreamId(true); // Wymuszamy użycie testowego ID
+      fetchYoutubeStreamId();
     }
   };
 
   // Przycisk do ręcznego odświeżania ID streamu YouTube
   const handleRefreshYoutubeId = () => {
-    fetchYoutubeStreamId(true); // Wymuszamy użycie testowego ID
+    fetchYoutubeStreamId();
   };
 
   return (
