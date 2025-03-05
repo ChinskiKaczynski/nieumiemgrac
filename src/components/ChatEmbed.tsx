@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { getLiveStreamId } from '@/lib/youtube';
 
@@ -28,9 +28,8 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
   const [isYoutubeChatAvailable, setIsYoutubeChatAvailable] = useState(false);
   const [actualYoutubeVideoId, setActualYoutubeVideoId] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>('');
-
-  // Stała z nazwą domeny dla parametru parent
-  const PARENT_DOMAIN = 'nieumiemgrac.pl';
+  const [twitchChatError, setTwitchChatError] = useState(false);
+  const twitchChatRef = useRef<HTMLIFrameElement>(null);
 
   // Synchronizacja z zewnętrznym stanem
   useEffect(() => {
@@ -112,6 +111,30 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     }
   };
 
+  // Funkcja do ręcznego otwierania czatu Twitch w nowym oknie
+  const openTwitchChat = () => {
+    if (twitchChannel) {
+      // Otwieramy czat w nowym oknie o określonych wymiarach
+      window.open(
+        `https://www.twitch.tv/popout/${twitchChannel}/chat?popout=`,
+        'TwitchChatPopup',
+        'width=400,height=600,resizable=yes,scrollbars=yes,status=no,location=no,toolbar=no'
+      );
+    }
+  };
+
+  // Funkcja do obsługi błędu ładowania iframe czatu Twitch
+  const handleTwitchChatError = () => {
+    setTwitchChatError(true);
+    setDebugInfo(`Twitch chat failed to load`);
+  };
+
+  // Funkcja do obsługi pomyślnego załadowania iframe czatu Twitch
+  const handleTwitchChatLoad = () => {
+    setTwitchChatError(false);
+    setDebugInfo(`Twitch chat loaded successfully`);
+  };
+
   return (
     <div className="w-full h-full bg-dark-400 overflow-hidden flex flex-col">
       {/* Przyciski przełączania platform - wyświetlane tylko jeśli hideControls jest false */}
@@ -143,15 +166,41 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
       )}
 
       {/* Kontener czatu */}
-      <div className="flex-grow h-full">
-        {/* Twitch Chat - osadzony bezpośrednio na stronie */}
+      <div className="flex-grow h-full relative">
+        {/* Twitch Chat - próbujemy osadzić, a jeśli się nie uda, pokazujemy alternatywę */}
         {currentPlatform === 'twitch' && (
-          <iframe
-            src={`https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${PARENT_DOMAIN}`}
-            height="100%"
-            width="100%"
-            style={{ border: 'none' }}
-          />
+          <>
+            <iframe
+              ref={twitchChatRef}
+              src={`https://www.twitch.tv/embed/${twitchChannel}/chat?parent=nieumiemgrac.pl&parent=www.nieumiemgrac.pl&darkpopout=true`}
+              height="100%"
+              width="100%"
+              style={{ border: 'none' }}
+              allow="autoplay; fullscreen"
+              onError={handleTwitchChatError}
+              onLoad={handleTwitchChatLoad}
+            />
+            
+            {/* Alternatywny widok, gdy osadzenie nie działa */}
+            {twitchChatError && (
+              <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-6 text-center bg-dark-400 z-10">
+                <div className="bg-dark-300 p-6 rounded-lg max-w-md">
+                  <h3 className="text-light-100 text-xl font-semibold mb-4">Chat Twitch</h3>
+                  
+                  <p className="text-light-300 mb-6">
+                    Nie udało się załadować czatu Twitch. Możesz otworzyć go w nowym oknie, klikając poniższy przycisk.
+                  </p>
+                  
+                  <button 
+                    onClick={openTwitchChat}
+                    className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-full transition-colors"
+                  >
+                    Otwórz czat w nowym oknie <FaExternalLinkAlt size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
         
         {/* YouTube Chat - pokazujemy tylko przycisk do otwarcia w nowym oknie */}
@@ -177,7 +226,6 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
                   <p>Debug: {debugInfo}</p>
                   <p>Video ID: {actualYoutubeVideoId || 'brak'}</p>
                   <p>Chat URL: {youtubeChatUrl || 'brak'}</p>
-                  <p>Parent domain: {PARENT_DOMAIN}</p>
                 </div>
               )}
             </div>
