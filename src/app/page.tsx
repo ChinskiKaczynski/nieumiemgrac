@@ -13,9 +13,6 @@ import { FaInfoCircle } from 'react-icons/fa';
 const TWITCH_CHANNEL = 'nie_umiem_grac_jednak';
 const YOUTUBE_CHANNEL_ID = 'UCuhEFa4jQBOa5UOAJ52sa0g';
 
-// Domena, na której będzie osadzona strona (bez protokołu http/https)
-const SITE_DOMAIN = 'nieumiemgrac.pl';
-
 export default function Home() {
   // Stan współdzielony między komponentami streamu i czatu
   const [currentPlatform, setCurrentPlatform] = useState<'twitch' | 'youtube'>('twitch');
@@ -106,7 +103,6 @@ export default function Home() {
                     platform={currentPlatform}
                     onPlatformChange={handlePlatformChange}
                     hideControls={true}
-                    embedDomain={SITE_DOMAIN}
                     onYoutubeChatAvailabilityChange={handleYoutubeChatAvailabilityChange}
                   />
                 </div>
