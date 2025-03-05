@@ -7,6 +7,7 @@ import StreamEmbed from '@/components/StreamEmbed';
 import ChatEmbed from '@/components/ChatEmbed';
 import ArchiveSection from '@/components/ArchiveSection';
 import AboutSection from '@/components/AboutSection';
+import { FaInfoCircle } from 'react-icons/fa';
 
 export default function Home() {
   // Stan współdzielony między komponentami streamu i czatu
@@ -33,7 +34,18 @@ export default function Home() {
             <div className="unified-stream-chat">
               {/* Nagłówek z przyciskami przełączania platform */}
               <div className="unified-stream-chat-header">
-                <h2 className="text-xl font-semibold text-light-100">Stream na żywo</h2>
+                <div className="flex items-center">
+                  <h2 className="text-xl font-semibold text-light-100">Stream na żywo</h2>
+                  
+                  {/* Informacja o ograniczeniach czatu YouTube */}
+                  {currentPlatform === 'youtube' && (
+                    <div className="ml-4 flex items-center text-light-300 text-sm">
+                      <FaInfoCircle className="mr-2 text-yellow-500" />
+                      <span>Czat YouTube dostępny w osobnym oknie</span>
+                    </div>
+                  )}
+                </div>
+                
                 <div className="flex gap-2">
                   <button
                     onClick={() => handlePlatformChange('twitch')}
