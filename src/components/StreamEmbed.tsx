@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getLiveStreamId } from '@/lib/youtube';
+import { FaSync } from 'react-icons/fa';
 
 interface StreamEmbedProps {
   twitchChannel: string;
@@ -12,6 +13,9 @@ interface StreamEmbedProps {
   onYoutubeVideoIdChange?: (videoId: string | null) => void; // Callback do przekazywania ID streamu YouTube
   hideControls?: boolean;
 }
+
+// Interwał odświeżania ID streamu YouTube (w milisekundach)
+const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minut
 
 const StreamEmbed: React.FC<StreamEmbedProps> = ({
   twitchChannel,
@@ -26,56 +30,95 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
   const [currentPlatform, setCurrentPlatform] = useState(platform);
   const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
   const [isLoadingYoutubeId, setIsLoadingYoutubeId] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Synchronizacja z zewnętrznym stanem
   useEffect(() => {
     setCurrentPlatform(platform);
   }, [platform]);
 
-  // Efekt do pobierania ID streamu YouTube
-  useEffect(() => {
-    async function fetchYoutubeStreamId() {
-      if (currentPlatform === 'youtube') {
-        setIsLoadingYoutubeId(true);
-        try {
-          // Pobierz ID aktualnego streamu
-          const streamId = await getLiveStreamId(youtubeChannel);
-          
-          // Jeśli mamy ID streamu, użyj go
-          if (streamId) {
-            setYoutubeVideoId(streamId);
-            
-            // Przekaż ID streamu do komponentu nadrzędnego
-            if (onYoutubeVideoIdChange) {
-              onYoutubeVideoIdChange(streamId);
-            }
-          } else {
-            // Jeśli nie ma aktualnego streamu, użyj przykładowego ID
-            setYoutubeVideoId('zf2XF-259BA'); // Przykładowe ID - użyj tego, które podał użytkownik
-            
-            // Przekaż ID streamu do komponentu nadrzędnego
-            if (onYoutubeVideoIdChange) {
-              onYoutubeVideoIdChange('zf2XF-259BA');
-            }
-          }
-        } catch (error) {
-          console.error('Błąd podczas pobierania ID streamu YouTube:', error);
-          
-          // W przypadku błędu, użyj przykładowego ID
-          setYoutubeVideoId('zf2XF-259BA');
-          
-          // Przekaż ID streamu do komponentu nadrzędnego
-          if (onYoutubeVideoIdChange) {
-            onYoutubeVideoIdChange('zf2XF-259BA');
-          }
-        } finally {
-          setIsLoadingYoutubeId(false);
+  // Funkcja do pobierania ID streamu YouTube
+  const fetchYoutubeStreamId = useCallback(async () => {
+    if (currentPlatform !== 'youtube') return;
+    
+    setIsLoadingYoutubeId(true);
+    setIsRefreshing(true);
+    
+    try {
+      // Pobierz ID aktualnego streamu
+      const streamId = await getLiveStreamId(youtubeChannel);
+      
+      // Jeśli mamy ID streamu, użyj go
+      if (streamId) {
+        setYoutubeVideoId(streamId);
+        
+        // Przekaż ID streamu do komponentu nadrzędnego
+        if (onYoutubeVideoIdChange) {
+          onYoutubeVideoIdChange(streamId);
+        }
+      } else {
+        // Jeśli nie ma aktualnego streamu, użyj null
+        setYoutubeVideoId(null);
+        
+        // Przekaż null do komponentu nadrzędnego
+        if (onYoutubeVideoIdChange) {
+          onYoutubeVideoIdChange(null);
         }
       }
+    } catch (error) {
+      console.error('Błąd podczas pobierania ID streamu YouTube:', error);
+      
+      // W przypadku błędu, użyj null
+      setYoutubeVideoId(null);
+      
+      // Przekaż null do komponentu nadrzędnego
+      if (onYoutubeVideoIdChange) {
+        onYoutubeVideoIdChange(null);
+      }
+    } finally {
+      setIsLoadingYoutubeId(false);
+      setIsRefreshing(false);
+      setLastRefreshTime(new Date());
     }
-
-    fetchYoutubeStreamId();
   }, [currentPlatform, youtubeChannel, onYoutubeVideoIdChange]);
+
+  // Efekt do pobierania ID streamu YouTube przy montowaniu komponentu i zmianie platformy
+  useEffect(() => {
+    fetchYoutubeStreamId();
+  }, [currentPlatform, youtubeChannel, fetchYoutubeStreamId]);
+
+  // Efekt do regularnego odświeżania ID streamu YouTube
+  useEffect(() => {
+    // Ustaw interwał odświeżania
+    const intervalId = setInterval(() => {
+      if (currentPlatform === 'youtube' && document.visibilityState === 'visible') {
+        fetchYoutubeStreamId();
+      }
+    }, REFRESH_INTERVAL);
+
+    // Funkcja do obsługi zdarzenia visibilitychange
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && currentPlatform === 'youtube') {
+        // Sprawdź, czy minęło wystarczająco dużo czasu od ostatniego odświeżenia
+        const now = new Date();
+        const timeSinceLastRefresh = now.getTime() - lastRefreshTime.getTime();
+        
+        if (timeSinceLastRefresh > 60 * 1000) { // 1 minuta
+          fetchYoutubeStreamId();
+        }
+      }
+    };
+
+    // Dodaj nasłuchiwanie zdarzenia visibilitychange
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Wyczyść interwał i nasłuchiwanie przy odmontowaniu komponentu
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentPlatform, fetchYoutubeStreamId, lastRefreshTime]);
 
   // Efekt do ustawiania URL streamu
   useEffect(() => {
@@ -89,6 +132,7 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
     } else if (youtubeVideoId) {
       youtubeUrl = `https://www.youtube.com/embed/${youtubeVideoId}`;
     } else {
+      // Jeśli nie ma ID streamu, użyj URL z ID kanału
       youtubeUrl = `https://www.youtube.com/embed/live_stream?channel=${youtubeChannel}`;
     }
     
@@ -101,6 +145,16 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
     if (onPlatformChange) {
       onPlatformChange(newPlatform);
     }
+  };
+
+  // Funkcja do ręcznego odświeżania ID streamu YouTube
+  const handleRefresh = () => {
+    fetchYoutubeStreamId();
+  };
+
+  // Formatowanie czasu ostatniego odświeżenia
+  const formatLastRefreshTime = () => {
+    return lastRefreshTime.toLocaleTimeString();
   };
 
   return (
@@ -131,6 +185,24 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
         </div>
       )}
 
+      {/* Przycisk odświeżania - wyświetlany tylko dla YouTube */}
+      {currentPlatform === 'youtube' && (
+        <div className="absolute top-4 left-4 z-10">
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className={`p-2 rounded-full transition-colors ${
+              isRefreshing
+                ? 'bg-dark-300 text-light-500 cursor-not-allowed'
+                : 'bg-dark-300 text-light-300 hover:bg-dark-200'
+            }`}
+            title={`Ostatnie odświeżenie: ${formatLastRefreshTime()}`}
+          >
+            <FaSync className={isRefreshing ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      )}
+
       {/* Kontener streama */}
       <div className="responsive-iframe-container bg-dark-400 overflow-hidden">
         {isLoadingYoutubeId && currentPlatform === 'youtube' ? (
@@ -145,8 +217,19 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
             allowFullScreen
             allow="autoplay; encrypted-media"
           />
-        ) : null}
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-light-300">
+            Nie znaleziono aktywnego streamu
+          </div>
+        )}
       </div>
+
+      {/* Informacja o ID streamu - wyświetlana tylko dla YouTube w trybie deweloperskim */}
+      {currentPlatform === 'youtube' && process.env.NODE_ENV === 'development' && (
+        <div className="absolute bottom-4 left-4 z-10 bg-dark-300 p-2 rounded text-xs text-light-400">
+          ID streamu: {youtubeVideoId || 'brak'}
+        </div>
+      )}
     </div>
   );
 };
