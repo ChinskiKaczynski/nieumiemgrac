@@ -14,7 +14,10 @@ const TWITCH_CHANNEL = 'nie_umiem_grac_jednak';
 const YOUTUBE_CHANNEL_ID = 'UCuhEFa4jQBOa5UOAJ52sa0g';
 
 // Domena, na której będzie osadzona strona (bez protokołu http/https)
-const SITE_DOMAIN = 'nieumiemgrac.pl';
+// Dla lokalnego developmentu używamy 'localhost'
+const SITE_DOMAIN = typeof window !== 'undefined' 
+  ? window.location.hostname 
+  : 'nieumiemgrac.pl';
 
 export default function Home() {
   // Stan współdzielony między komponentami streamu i czatu
@@ -101,7 +104,7 @@ export default function Home() {
                 <div className="unified-chat-container">
                   <ChatEmbed 
                     twitchChannel={TWITCH_CHANNEL} 
-                    youtubeVideoId="live_stream"
+                    youtubeVideoId="DUkl-K0-GXo" // Używamy konkretnego ID zamiast "live_stream"
                     youtubeChannelId={YOUTUBE_CHANNEL_ID}
                     platform={currentPlatform}
                     onPlatformChange={handlePlatformChange}
