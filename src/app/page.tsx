@@ -9,13 +9,23 @@ import ArchiveSection from '@/components/ArchiveSection';
 import AboutSection from '@/components/AboutSection';
 import { FaInfoCircle } from 'react-icons/fa';
 
+// Domena, na której będzie osadzona strona (bez protokołu http/https)
+const SITE_DOMAIN = 'nieumiemgrac.pl';
+
 export default function Home() {
   // Stan współdzielony między komponentami streamu i czatu
   const [currentPlatform, setCurrentPlatform] = useState<'twitch' | 'youtube'>('twitch');
+  // Stan do śledzenia, czy czat YouTube jest dostępny
+  const [isYoutubeChatAvailable, setIsYoutubeChatAvailable] = useState(false);
 
   // Funkcja do zmiany platformy
   const handlePlatformChange = (platform: 'twitch' | 'youtube') => {
     setCurrentPlatform(platform);
+  };
+
+  // Funkcja do aktualizacji stanu dostępności czatu YouTube
+  const handleYoutubeChatAvailabilityChange = (isAvailable: boolean) => {
+    setIsYoutubeChatAvailable(isAvailable);
   };
 
   return (
@@ -37,11 +47,11 @@ export default function Home() {
                 <div className="flex items-center">
                   <h2 className="text-xl font-semibold text-light-100">Stream na żywo</h2>
                   
-                  {/* Informacja o ograniczeniach czatu YouTube */}
-                  {currentPlatform === 'youtube' && (
+                  {/* Informacja o ograniczeniach czatu YouTube - pokazujemy tylko jeśli czat nie jest dostępny */}
+                  {currentPlatform === 'youtube' && !isYoutubeChatAvailable && (
                     <div className="ml-4 flex items-center text-light-300 text-sm">
                       <FaInfoCircle className="mr-2 text-yellow-500" />
-                      <span>Czat YouTube dostępny w osobnym oknie</span>
+                      <span>Czat YouTube może wymagać otwarcia w osobnym oknie</span>
                     </div>
                   )}
                 </div>
@@ -91,6 +101,8 @@ export default function Home() {
                     platform={currentPlatform}
                     onPlatformChange={handlePlatformChange}
                     hideControls={true}
+                    embedDomain={SITE_DOMAIN}
+                    onYoutubeChatAvailabilityChange={handleYoutubeChatAvailabilityChange}
                   />
                 </div>
               </div>
