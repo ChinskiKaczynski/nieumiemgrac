@@ -24,6 +24,8 @@ export default function Home() {
   const [currentPlatform, setCurrentPlatform] = useState<'twitch' | 'youtube'>('twitch');
   // Stan do śledzenia, czy czat YouTube jest dostępny
   const [isYoutubeChatAvailable, setIsYoutubeChatAvailable] = useState(false);
+  // Stan do przechowywania ID streamu YouTube
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
 
   // Funkcja do zmiany platformy
   const handlePlatformChange = (platform: 'twitch' | 'youtube') => {
@@ -33,6 +35,11 @@ export default function Home() {
   // Funkcja do aktualizacji stanu dostępności czatu YouTube
   const handleYoutubeChatAvailabilityChange = (isAvailable: boolean) => {
     setIsYoutubeChatAvailable(isAvailable);
+  };
+
+  // Funkcja do aktualizacji ID streamu YouTube
+  const handleYoutubeVideoIdChange = (videoId: string | null) => {
+    setYoutubeVideoId(videoId);
   };
 
   return (
@@ -96,6 +103,7 @@ export default function Home() {
                     youtubeChannel={YOUTUBE_CHANNEL_ID} 
                     platform={currentPlatform}
                     onPlatformChange={handlePlatformChange}
+                    onYoutubeVideoIdChange={handleYoutubeVideoIdChange}
                     hideControls={true}
                   />
                 </div>
@@ -104,7 +112,7 @@ export default function Home() {
                 <div className="unified-chat-container">
                   <ChatEmbed 
                     twitchChannel={TWITCH_CHANNEL} 
-                    youtubeVideoId="DUkl-K0-GXo" // Używamy konkretnego ID zamiast "live_stream"
+                    youtubeVideoId={youtubeVideoId || undefined}
                     youtubeChannelId={YOUTUBE_CHANNEL_ID}
                     platform={currentPlatform}
                     onPlatformChange={handlePlatformChange}
