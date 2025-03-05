@@ -29,6 +29,9 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
   const [actualYoutubeVideoId, setActualYoutubeVideoId] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>('');
 
+  // Stała z nazwą domeny dla parametru parent
+  const PARENT_DOMAIN = 'nieumiemgrac.pl';
+
   // Synchronizacja z zewnętrznym stanem
   useEffect(() => {
     setCurrentPlatform(platform);
@@ -109,18 +112,6 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     }
   };
 
-  // Funkcja do ręcznego otwierania czatu Twitch w nowym oknie
-  const openTwitchChat = () => {
-    if (twitchChannel) {
-      // Otwieramy czat w nowym oknie o określonych wymiarach
-      window.open(
-        `https://www.twitch.tv/popout/${twitchChannel}/chat?popout=`,
-        'TwitchChatPopup',
-        'width=400,height=600,resizable=yes,scrollbars=yes,status=no,location=no,toolbar=no'
-      );
-    }
-  };
-
   return (
     <div className="w-full h-full bg-dark-400 overflow-hidden flex flex-col">
       {/* Przyciski przełączania platform - wyświetlane tylko jeśli hideControls jest false */}
@@ -153,24 +144,14 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
 
       {/* Kontener czatu */}
       <div className="flex-grow h-full">
-        {/* Twitch Chat - pokazujemy tylko przycisk do otwarcia w nowym oknie */}
+        {/* Twitch Chat - osadzony bezpośrednio na stronie */}
         {currentPlatform === 'twitch' && (
-          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-            <div className="bg-dark-300 p-6 rounded-lg max-w-md">
-              <h3 className="text-light-100 text-xl font-semibold mb-4">Chat Twitch</h3>
-              
-              <p className="text-light-300 mb-6">
-                Otwórz czat Twitch w osobnym oknie, aby móc wygodnie rozmawiać podczas oglądania streamu.
-              </p>
-              
-              <button 
-                onClick={openTwitchChat}
-                className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-full transition-colors"
-              >
-                Otwórz czat w nowym oknie <FaExternalLinkAlt size={14} />
-              </button>
-            </div>
-          </div>
+          <iframe
+            src={`https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${PARENT_DOMAIN}`}
+            height="100%"
+            width="100%"
+            style={{ border: 'none' }}
+          />
         )}
         
         {/* YouTube Chat - pokazujemy tylko przycisk do otwarcia w nowym oknie */}
@@ -196,6 +177,7 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
                   <p>Debug: {debugInfo}</p>
                   <p>Video ID: {actualYoutubeVideoId || 'brak'}</p>
                   <p>Chat URL: {youtubeChatUrl || 'brak'}</p>
+                  <p>Parent domain: {PARENT_DOMAIN}</p>
                 </div>
               )}
             </div>
