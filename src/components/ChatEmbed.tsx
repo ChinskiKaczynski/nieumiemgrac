@@ -31,7 +31,6 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
   const [isYoutubeChatAvailable, setIsYoutubeChatAvailable] = useState(false);
   const [actualYoutubeVideoId, setActualYoutubeVideoId] = useState<string | null>(null);
   const [isLoadingYoutubeId, setIsLoadingYoutubeId] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string>('');
 
   // Synchronizacja z zewnętrznym stanem
   useEffect(() => {
@@ -49,7 +48,6 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
   useEffect(() => {
     if (youtubeVideoId && youtubeVideoId !== 'live_stream') {
       setActualYoutubeVideoId(youtubeVideoId);
-      setDebugInfo(`Używam podanego ID: ${youtubeVideoId}`);
       setIsLoadingYoutubeId(false);
     } else if (currentPlatform === 'youtube' && youtubeChannelId) {
       // Jeśli nie podano konkretnego ID, pobierz ID aktualnego streamu
@@ -58,18 +56,15 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
         .then(streamId => {
           if (streamId) {
             setActualYoutubeVideoId(streamId);
-            setDebugInfo(`Pobrano ID streamu: ${streamId}`);
           } else {
             // Jeśli nie ma aktualnego streamu, użyj przykładowego ID
             setActualYoutubeVideoId('zf2XF-259BA'); // Przykładowe ID - użyj tego, które podał użytkownik
-            setDebugInfo('Brak aktualnego streamu, używam przykładowego ID');
           }
         })
         .catch(error => {
           console.error('Błąd podczas pobierania ID streamu YouTube:', error);
           // W przypadku błędu, użyj przykładowego ID
           setActualYoutubeVideoId('zf2XF-259BA');
-          setDebugInfo(`Błąd: ${error}`);
         })
         .finally(() => {
           setIsLoadingYoutubeId(false);
@@ -87,12 +82,6 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     // Tworzymy URL do czatu Twitch
     const twitchChatUrl = `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${twitchParent}`;
     
-    // Tworzymy URL do czatu YouTube z aktualnym ID streamu
-    let youtubeChatEmbedUrl = '';
-    if (actualYoutubeVideoId) {
-      youtubeChatEmbedUrl = `https://www.youtube.com/live_chat?v=${actualYoutubeVideoId}&embed_domain=${hostname}`;
-    }
-    
     // Zapisujemy pełny URL do czatu YouTube, aby móc go użyć w linku zewnętrznym
     let fullYoutubeChatUrl = '';
     if (actualYoutubeVideoId) {
@@ -105,12 +94,7 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     // Ustawiamy URL do osadzenia w zależności od wybranej platformy
     if (currentPlatform === 'twitch') {
       setEmbedUrl(twitchChatUrl);
-      setDebugInfo(`Twitch URL: ${twitchChatUrl}`);
       setIsYoutubeChatAvailable(false);
-    } else if (currentPlatform === 'youtube' && youtubeChatEmbedUrl) {
-      setEmbedUrl(youtubeChatEmbedUrl);
-      setDebugInfo(`YouTube URL: ${youtubeChatEmbedUrl}`);
-      // Próbujemy osadzić czat YouTube - stan dostępności zostanie zaktualizowany po załadowaniu lub błędzie
     } else {
       setEmbedUrl('');
       setIsYoutubeChatAvailable(false);
@@ -122,24 +106,6 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     setCurrentPlatform(newPlatform);
     if (onPlatformChange) {
       onPlatformChange(newPlatform);
-    }
-  };
-
-  // Funkcja do obsługi błędu ładowania iframe
-  const handleIframeError = () => {
-    if (currentPlatform === 'youtube') {
-      setIsYoutubeChatAvailable(false);
-      setDebugInfo(`Błąd ładowania iframe YouTube`);
-    }
-  };
-
-  // Funkcja do obsługi pomyślnego załadowania iframe
-  const handleIframeLoad = () => {
-    if (currentPlatform === 'youtube') {
-      // Ustawiamy dostępność na true, ale może to być fałszywie pozytywne
-      // Rzeczywista dostępność zostanie zweryfikowana przez użytkownika
-      setIsYoutubeChatAvailable(true);
-      setDebugInfo(`Iframe YouTube załadowany pomyślnie`);
     }
   };
 
@@ -197,54 +163,30 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
           />
         )}
         
-        {/* YouTube Chat */}
+        {/* YouTube Chat - tylko przycisk do otwarcia w nowym oknie */}
         {currentPlatform === 'youtube' && (
-          <div className="w-full h-full flex flex-col">
-            {/* Zawsze wyświetlamy przycisk do otwarcia czatu w nowym oknie */}
-            <div className="bg-dark-300 p-3 border-b border-dark-200">
-              <button 
-                onClick={openYoutubeChat}
-                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-full transition-colors text-sm"
-              >
-                Otwórz czat YouTube w nowym oknie <FaExternalLinkAlt size={12} />
-              </button>
-              {actualYoutubeVideoId && (
-                <span className="ml-2 text-xs text-light-400">
-                  ID streamu: {actualYoutubeVideoId}
-                </span>
-              )}
-            </div>
-            
-            {/* Próbujemy osadzić czat YouTube */}
-            <div className="flex-grow">
-              {isLoadingYoutubeId ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
-                </div>
-              ) : embedUrl ? (
-                <iframe
-                  src={embedUrl}
-                  className="w-full h-full"
-                  frameBorder="0"
-                  sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"
-                  onError={handleIframeError}
-                  onLoad={handleIframeLoad}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-light-400">
-                  Nie można załadować czatu YouTube
-                </div>
-              )}
-            </div>
-            
-            {/* Informacje debugowania - tylko w trybie deweloperskim */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="p-2 bg-dark-400 text-xs text-light-400 text-left border-t border-dark-200">
-                <p>Debug: {debugInfo}</p>
-                <p>Video ID: {actualYoutubeVideoId || 'brak'}</p>
-                <p>Embed URL: {embedUrl || 'brak'}</p>
-                <p>Chat URL: {youtubeChatUrl || 'brak'}</p>
-              </div>
+          <div className="w-full h-full flex flex-col items-center justify-center bg-dark-400">
+            {isLoadingYoutubeId ? (
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600 mb-4"></div>
+            ) : (
+              <>
+                <button 
+                  onClick={openYoutubeChat}
+                  className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-full transition-colors text-lg font-medium shadow-lg hover:shadow-xl"
+                >
+                  Otwórz czat YouTube w nowym oknie <FaExternalLinkAlt size={16} />
+                </button>
+                
+                {actualYoutubeVideoId && (
+                  <p className="mt-4 text-sm text-light-400">
+                    ID streamu: {actualYoutubeVideoId}
+                  </p>
+                )}
+                
+                <p className="mt-2 text-sm text-light-500 max-w-md text-center px-4">
+                  Ze względu na ograniczenia YouTube, czat jest dostępny tylko w osobnym oknie
+                </p>
+              </>
             )}
           </div>
         )}
