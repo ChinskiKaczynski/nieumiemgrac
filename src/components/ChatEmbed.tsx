@@ -104,7 +104,8 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     // Zapisujemy pełny URL do czatu YouTube, aby móc go użyć w linku zewnętrznym
     let fullYoutubeChatUrl = '';
     if (actualYoutubeVideoId) {
-      fullYoutubeChatUrl = `https://www.youtube.com/live_chat?v=${actualYoutubeVideoId}`;
+      // Używamy formatu z is_popout=1, jak sugerował użytkownik
+      fullYoutubeChatUrl = `https://www.youtube.com/live_chat?is_popout=1&v=${actualYoutubeVideoId}`;
     }
     
     setYoutubeChatUrl(fullYoutubeChatUrl);
@@ -199,57 +200,50 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
           />
         )}
         
-        {/* YouTube Chat - próbujemy osadzić, a jeśli się nie uda, pokazujemy alternatywę */}
+        {/* YouTube Chat */}
         {currentPlatform === 'youtube' && (
-          <>
-            {isLoadingYoutubeId && (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
-              </div>
-            )}
+          <div className="w-full h-full flex flex-col">
+            {/* Zawsze wyświetlamy przycisk do otwarcia czatu w nowym oknie */}
+            <div className="bg-dark-300 p-3 border-b border-dark-200">
+              <button 
+                onClick={openYoutubeChat}
+                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-full transition-colors text-sm"
+              >
+                Otwórz czat YouTube w nowym oknie <FaExternalLinkAlt size={12} />
+              </button>
+            </div>
             
-            {!isLoadingYoutubeId && embedUrl && (
-              <iframe
-                src={embedUrl}
-                className="w-full h-full"
-                frameBorder="0"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"
-                onError={handleIframeError}
-                onLoad={handleIframeLoad}
-                style={{ display: isYoutubeChatAvailable ? 'block' : 'none' }}
-              />
-            )}
-            
-            {/* Alternatywny widok, gdy osadzenie nie działa lub nie ma ID streamu */}
-            {!isLoadingYoutubeId && (!isYoutubeChatAvailable || !embedUrl) && (
-              <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-                <div className="bg-dark-300 p-6 rounded-lg max-w-md">
-                  <h3 className="text-light-100 text-xl font-semibold mb-4">Chat YouTube</h3>
-                  
-                  <p className="text-light-300 mb-6">
-                    Ze względu na ograniczenia YouTube, czat nie może być osadzony bezpośrednio na stronie. 
-                    Możesz otworzyć czat YouTube w nowym oknie, klikając poniższy przycisk.
-                  </p>
-                  
-                  <button 
-                    onClick={openYoutubeChat}
-                    className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-full transition-colors"
-                  >
-                    Otwórz czat YouTube <FaExternalLinkAlt size={14} />
-                  </button>
-                  
-                  {/* Informacje debugowania - tylko w trybie deweloperskim */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <div className="mt-4 p-2 bg-dark-400 rounded text-xs text-light-400 text-left">
-                      <p>Debug: {debugInfo}</p>
-                      <p>Video ID: {actualYoutubeVideoId || 'brak'}</p>
-                      <p>Embed URL: {embedUrl || 'brak'}</p>
-                    </div>
-                  )}
+            {/* Próbujemy osadzić czat YouTube */}
+            <div className="flex-grow">
+              {isLoadingYoutubeId ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
                 </div>
+              ) : embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"
+                  onError={handleIframeError}
+                  onLoad={handleIframeLoad}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-light-400">
+                  Nie można załadować czatu YouTube
+                </div>
+              )}
+            </div>
+            
+            {/* Informacje debugowania - tylko w trybie deweloperskim */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="p-2 bg-dark-400 text-xs text-light-400 text-left border-t border-dark-200">
+                <p>Debug: {debugInfo}</p>
+                <p>Video ID: {actualYoutubeVideoId || 'brak'}</p>
+                <p>Embed URL: {embedUrl || 'brak'}</p>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
