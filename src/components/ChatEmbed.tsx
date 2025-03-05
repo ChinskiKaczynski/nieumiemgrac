@@ -7,6 +7,7 @@ interface ChatEmbedProps {
   youtubeVideoId?: string;
   platform?: 'twitch' | 'youtube';
   onPlatformChange?: (platform: 'twitch' | 'youtube') => void;
+  hideControls?: boolean;
 }
 
 const ChatEmbed: React.FC<ChatEmbedProps> = ({
@@ -14,6 +15,7 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
   youtubeVideoId,
   platform = 'twitch',
   onPlatformChange,
+  hideControls = false,
 }) => {
   const [embedUrl, setEmbedUrl] = useState('');
   const [currentPlatform, setCurrentPlatform] = useState(platform);
@@ -42,38 +44,40 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
   };
 
   return (
-    <div className="w-full h-full bg-dark-400 rounded-lg overflow-hidden flex flex-col">
-      {/* Przyciski przełączania platform */}
-      <div className="p-4 bg-dark-300">
-        <div className="flex gap-2">
-          <button
-            onClick={() => handlePlatformChange('twitch')}
-            className={`px-4 py-2 rounded-full font-medium transition-colors ${
-              currentPlatform === 'twitch'
-                ? 'bg-purple-600 text-white'
-                : 'bg-dark-400 text-light-300 hover:bg-dark-200'
-            }`}
-          >
-            Twitch Chat
-          </button>
-          <button
-            onClick={() => handlePlatformChange('youtube')}
-            disabled={!youtubeVideoId}
-            className={`px-4 py-2 rounded-full font-medium transition-colors ${
-              currentPlatform === 'youtube'
-                ? 'bg-red-600 text-white'
-                : youtubeVideoId
-                ? 'bg-dark-400 text-light-300 hover:bg-dark-200'
-                : 'bg-dark-400 text-light-500 cursor-not-allowed'
-            }`}
-          >
-            YouTube Chat
-          </button>
+    <div className="w-full h-full bg-dark-400 overflow-hidden flex flex-col">
+      {/* Przyciski przełączania platform - wyświetlane tylko jeśli hideControls jest false */}
+      {!hideControls && (
+        <div className="p-4 bg-dark-300">
+          <div className="flex gap-2">
+            <button
+              onClick={() => handlePlatformChange('twitch')}
+              className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                currentPlatform === 'twitch'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-dark-400 text-light-300 hover:bg-dark-200'
+              }`}
+            >
+              Twitch Chat
+            </button>
+            <button
+              onClick={() => handlePlatformChange('youtube')}
+              disabled={!youtubeVideoId}
+              className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                currentPlatform === 'youtube'
+                  ? 'bg-red-600 text-white'
+                  : youtubeVideoId
+                  ? 'bg-dark-400 text-light-300 hover:bg-dark-200'
+                  : 'bg-dark-400 text-light-500 cursor-not-allowed'
+              }`}
+            >
+              YouTube Chat
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Kontener czatu */}
-      <div className="flex-grow" style={{ height: 'calc(100% - 4rem)' }}>
+      <div className="flex-grow h-full">
         {embedUrl && (
           <iframe
             src={embedUrl}

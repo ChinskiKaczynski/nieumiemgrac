@@ -113,6 +113,53 @@ body {
   }
 }
 
+/* Unified stream-chat layout */
+.unified-stream-chat {
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.unified-stream-chat-header {
+  background-color: var(--dark-300);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--dark-200);
+}
+
+.unified-stream-chat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .unified-stream-chat-content {
+    flex-direction: row;
+    height: calc(100vh - 200px);
+    min-height: 500px;
+  }
+}
+
+.unified-stream-container {
+  flex: 3;
+}
+
+.unified-chat-container {
+  flex: 1;
+  border-top: 1px solid var(--dark-300);
+}
+
+@media (min-width: 1024px) {
+  .unified-chat-container {
+    border-top: none;
+    border-left: 1px solid var(--dark-300);
+  }
+}
+
 /* Pulse animation for live indicator */
 @keyframes pulse {
   0% {

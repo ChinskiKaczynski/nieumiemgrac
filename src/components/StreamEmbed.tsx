@@ -8,6 +8,7 @@ interface StreamEmbedProps {
   youtubeStreamUrl?: string;
   platform?: 'twitch' | 'youtube';
   onPlatformChange?: (platform: 'twitch' | 'youtube') => void;
+  hideControls?: boolean;
 }
 
 const StreamEmbed: React.FC<StreamEmbedProps> = ({
@@ -16,6 +17,7 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
   youtubeStreamUrl,
   platform = 'twitch',
   onPlatformChange,
+  hideControls = false,
 }) => {
   const [embedUrl, setEmbedUrl] = useState('');
   const [currentPlatform, setCurrentPlatform] = useState(platform);
@@ -45,32 +47,34 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
 
   return (
     <div className="relative w-full">
-      {/* Przyciski przełączania platform */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
-        <button
-          onClick={() => handlePlatformChange('twitch')}
-          className={`px-4 py-2 rounded-full font-medium transition-colors ${
-            currentPlatform === 'twitch'
-              ? 'bg-purple-600 text-white'
-              : 'bg-dark-300 text-light-300 hover:bg-dark-200'
-          }`}
-        >
-          Twitch
-        </button>
-        <button
-          onClick={() => handlePlatformChange('youtube')}
-          className={`px-4 py-2 rounded-full font-medium transition-colors ${
-            currentPlatform === 'youtube'
-              ? 'bg-red-600 text-white'
-              : 'bg-dark-300 text-light-300 hover:bg-dark-200'
-          }`}
-        >
-          YouTube
-        </button>
-      </div>
+      {/* Przyciski przełączania platform - wyświetlane tylko jeśli hideControls jest false */}
+      {!hideControls && (
+        <div className="absolute top-4 right-4 z-10 flex gap-2">
+          <button
+            onClick={() => handlePlatformChange('twitch')}
+            className={`px-4 py-2 rounded-full font-medium transition-colors ${
+              currentPlatform === 'twitch'
+                ? 'bg-purple-600 text-white'
+                : 'bg-dark-300 text-light-300 hover:bg-dark-200'
+            }`}
+          >
+            Twitch
+          </button>
+          <button
+            onClick={() => handlePlatformChange('youtube')}
+            className={`px-4 py-2 rounded-full font-medium transition-colors ${
+              currentPlatform === 'youtube'
+                ? 'bg-red-600 text-white'
+                : 'bg-dark-300 text-light-300 hover:bg-dark-200'
+            }`}
+          >
+            YouTube
+          </button>
+        </div>
+      )}
 
       {/* Kontener streama */}
-      <div className="responsive-iframe-container bg-dark-400 rounded-lg overflow-hidden">
+      <div className="responsive-iframe-container bg-dark-400 overflow-hidden">
         {embedUrl && (
           <iframe
             src={embedUrl}
