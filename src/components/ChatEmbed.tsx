@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
+import { getLiveStreamId } from '@/lib/youtube';
 
 interface ChatEmbedProps {
   twitchChannel: string;
   youtubeVideoId?: string;
+  youtubeChannelId?: string;
   platform?: 'twitch' | 'youtube';
   onPlatformChange?: (platform: 'twitch' | 'youtube') => void;
   hideControls?: boolean;
@@ -16,6 +18,7 @@ interface ChatEmbedProps {
 const ChatEmbed: React.FC<ChatEmbedProps> = ({
   twitchChannel,
   youtubeVideoId,
+  youtubeChannelId,
   platform = 'twitch',
   onPlatformChange,
   hideControls = false,
@@ -26,6 +29,8 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
   const [currentPlatform, setCurrentPlatform] = useState(platform);
   const [youtubeChatUrl, setYoutubeChatUrl] = useState('');
   const [isYoutubeChatAvailable, setIsYoutubeChatAvailable] = useState(false);
+  const [actualYoutubeVideoId, setActualYoutubeVideoId] = useState<string | null>(null);
+  const [isLoadingYoutubeId, setIsLoadingYoutubeId] = useState(false);
 
   // Synchronizacja z zewnętrznym stanem
   useEffect(() => {
@@ -39,26 +44,60 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     }
   }, [isYoutubeChatAvailable, onYoutubeChatAvailabilityChange]);
 
+  // Efekt do pobierania aktualnego ID streamu YouTube
+  useEffect(() => {
+    async function fetchYoutubeStreamId() {
+      if (currentPlatform === 'youtube' && youtubeChannelId) {
+        setIsLoadingYoutubeId(true);
+        try {
+          // Jeśli podano konkretne ID filmu, użyj go
+          if (youtubeVideoId && youtubeVideoId !== 'live_stream') {
+            setActualYoutubeVideoId(youtubeVideoId);
+          } else {
+            // W przeciwnym razie pobierz ID aktualnego streamu
+            const streamId = await getLiveStreamId(youtubeChannelId);
+            setActualYoutubeVideoId(streamId);
+          }
+        } catch (error) {
+          console.error('Błąd podczas pobierania ID streamu YouTube:', error);
+          setActualYoutubeVideoId(null);
+        } finally {
+          setIsLoadingYoutubeId(false);
+        }
+      }
+    }
+
+    fetchYoutubeStreamId();
+  }, [currentPlatform, youtubeVideoId, youtubeChannelId]);
+
   useEffect(() => {
     // Pobieramy hostname z window.location lub używamy podanej domeny
-    let hostname = embedDomain || window?.location?.hostname || 'localhost';
+    const hostname = embedDomain || window?.location?.hostname || 'localhost';
     
-    // Jeśli domena nie zaczyna się od "www." i nie jest localhost, dodajemy "www."
-    if (hostname !== 'localhost' && !hostname.startsWith('www.')) {
-      hostname = `www.${hostname}`;
+    // Tworzymy pełny URL domeny z protokołem
+    let fullDomain = hostname;
+    if (!fullDomain.startsWith('http')) {
+      fullDomain = `https://${fullDomain}`;
+    }
+    
+    // Usuwamy trailing slash, jeśli istnieje
+    if (fullDomain.endsWith('/')) {
+      fullDomain = fullDomain.slice(0, -1);
     }
     
     const twitchChatUrl = `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${hostname}`;
     
-    // Tworzymy URL do czatu YouTube
-    const youtubeChatEmbedUrl = youtubeVideoId 
-      ? `https://www.youtube.com/live_chat?v=${youtubeVideoId}&embed_domain=${hostname}`
-      : '';
+    // Tworzymy URL do czatu YouTube z aktualnym ID streamu
+    let youtubeChatEmbedUrl = '';
+    if (actualYoutubeVideoId) {
+      youtubeChatEmbedUrl = `https://www.youtube.com/live_chat?v=${actualYoutubeVideoId}&embed_domain=${hostname}`;
+    }
     
     // Zapisujemy pełny URL do czatu YouTube, aby móc go użyć w linku zewnętrznym
-    const fullYoutubeChatUrl = youtubeVideoId 
-      ? `https://www.youtube.com/live_chat?v=${youtubeVideoId}`
-      : '';
+    let fullYoutubeChatUrl = '';
+    if (actualYoutubeVideoId) {
+      fullYoutubeChatUrl = `https://www.youtube.com/live_chat?v=${actualYoutubeVideoId}`;
+    }
     
     setYoutubeChatUrl(fullYoutubeChatUrl);
     
@@ -73,7 +112,7 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
       setEmbedUrl('');
       setIsYoutubeChatAvailable(false);
     }
-  }, [twitchChannel, youtubeVideoId, currentPlatform, embedDomain]);
+  }, [twitchChannel, actualYoutubeVideoId, currentPlatform, embedDomain]);
 
   // Funkcja do zmiany platformy
   const handlePlatformChange = (newPlatform: 'twitch' | 'youtube') => {
@@ -117,11 +156,11 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
             </button>
             <button
               onClick={() => handlePlatformChange('youtube')}
-              disabled={!youtubeVideoId}
+              disabled={!actualYoutubeVideoId && !isLoadingYoutubeId}
               className={`px-4 py-2 rounded-full font-medium transition-colors ${
                 currentPlatform === 'youtube'
                   ? 'bg-red-600 text-white'
-                  : youtubeVideoId
+                  : actualYoutubeVideoId || isLoadingYoutubeId
                   ? 'bg-dark-400 text-light-300 hover:bg-dark-200'
                   : 'bg-dark-400 text-light-500 cursor-not-allowed'
               }`}
@@ -146,7 +185,13 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
         {/* YouTube Chat - próbujemy osadzić, a jeśli się nie uda, pokazujemy alternatywę */}
         {currentPlatform === 'youtube' && (
           <>
-            {embedUrl && (
+            {isLoadingYoutubeId && (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+              </div>
+            )}
+            
+            {!isLoadingYoutubeId && embedUrl && (
               <iframe
                 src={embedUrl}
                 className="w-full h-full"
@@ -157,13 +202,13 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
               />
             )}
             
-            {/* Alternatywny widok, gdy osadzenie nie działa */}
-            {(!isYoutubeChatAvailable || !embedUrl) && (
+            {/* Alternatywny widok, gdy osadzenie nie działa lub nie ma ID streamu */}
+            {!isLoadingYoutubeId && (!isYoutubeChatAvailable || !embedUrl) && (
               <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
                 <div className="bg-dark-300 p-6 rounded-lg max-w-md">
                   <h3 className="text-light-100 text-xl font-semibold mb-4">Chat YouTube</h3>
                   
-                  {youtubeVideoId ? (
+                  {actualYoutubeVideoId ? (
                     <>
                       <p className="text-light-300 mb-6">
                         Ze względu na ograniczenia YouTube, czat nie może być osadzony bezpośrednio na stronie. 
@@ -181,7 +226,9 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
                     </>
                   ) : (
                     <p className="text-light-400">
-                      Chat YouTube będzie dostępny podczas aktywnego streamu
+                      {isLoadingYoutubeId 
+                        ? "Ładowanie informacji o streamie YouTube..." 
+                        : "Chat YouTube będzie dostępny podczas aktywnego streamu"}
                     </p>
                   )}
                 </div>

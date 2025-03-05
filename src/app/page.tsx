@@ -9,6 +9,10 @@ import ArchiveSection from '@/components/ArchiveSection';
 import AboutSection from '@/components/AboutSection';
 import { FaInfoCircle } from 'react-icons/fa';
 
+// Konfiguracja kanałów
+const TWITCH_CHANNEL = 'nie_umiem_grac_jednak';
+const YOUTUBE_CHANNEL_ID = 'UCuhEFa4jQBOa5UOAJ52sa0g';
+
 // Domena, na której będzie osadzona strona (bez protokołu http/https)
 const SITE_DOMAIN = 'nieumiemgrac.pl';
 
@@ -85,8 +89,8 @@ export default function Home() {
                 {/* Stream */}
                 <div className="unified-stream-container">
                   <StreamEmbed 
-                    twitchChannel="nie_umiem_grac_jednak" 
-                    youtubeChannel="UCuhEFa4jQBOa5UOAJ52sa0g" 
+                    twitchChannel={TWITCH_CHANNEL} 
+                    youtubeChannel={YOUTUBE_CHANNEL_ID} 
                     platform={currentPlatform}
                     onPlatformChange={handlePlatformChange}
                     hideControls={true}
@@ -96,8 +100,9 @@ export default function Home() {
                 {/* Chat */}
                 <div className="unified-chat-container">
                   <ChatEmbed 
-                    twitchChannel="nie_umiem_grac_jednak" 
+                    twitchChannel={TWITCH_CHANNEL} 
                     youtubeVideoId="live_stream"
+                    youtubeChannelId={YOUTUBE_CHANNEL_ID}
                     platform={currentPlatform}
                     onPlatformChange={handlePlatformChange}
                     hideControls={true}
