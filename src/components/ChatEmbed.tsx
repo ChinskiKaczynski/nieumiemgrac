@@ -86,11 +86,15 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     // Pobieramy hostname z window.location lub używamy podanej domeny
     const hostname = embedDomain || window?.location?.hostname || 'localhost';
     
-    // Dla Twitch, używamy tylko nazwy domeny bez protokołu
-    const twitchParent = hostname.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    // Dla Twitch, używamy tylko nazwy domeny bez protokołu i bez www
+    let twitchParent = hostname.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    // Usuwamy również www. jeśli istnieje
+    twitchParent = twitchParent.replace(/^www\./, '');
     
     // Tworzymy URL do czatu Twitch
-    const twitchChatUrl = `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${twitchParent}`;
+    const twitchChatUrlWithParent = `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=${twitchParent}`;
+    
+    setDebugInfo(`Twitch URL: ${twitchChatUrlWithParent}, Parent: ${twitchParent}`);
     
     // Tworzymy URL do czatu YouTube z aktualnym ID streamu
     let youtubeChatEmbedUrl = '';
@@ -108,13 +112,9 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     
     // Ustawiamy URL do osadzenia w zależności od wybranej platformy
     if (currentPlatform === 'twitch') {
-      setEmbedUrl(twitchChatUrl);
-      setDebugInfo(`Twitch URL: ${twitchChatUrl}`);
-      setIsYoutubeChatAvailable(false);
+      setEmbedUrl(twitchChatUrlWithParent);
     } else if (currentPlatform === 'youtube' && youtubeChatEmbedUrl) {
       setEmbedUrl(youtubeChatEmbedUrl);
-      setDebugInfo(`YouTube URL: ${youtubeChatEmbedUrl}`);
-      // Próbujemy osadzić czat YouTube - stan dostępności zostanie zaktualizowany po załadowaniu lub błędzie
     } else {
       setEmbedUrl('');
       setIsYoutubeChatAvailable(false);
@@ -136,6 +136,18 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
       window.open(
         youtubeChatUrl,
         'YouTubeChatPopup',
+        'width=400,height=600,resizable=yes,scrollbars=yes,status=no,location=no,toolbar=no'
+      );
+    }
+  };
+
+  // Funkcja do ręcznego otwierania czatu Twitch w nowym oknie
+  const openTwitchChat = () => {
+    if (twitchChannel) {
+      // Otwieramy czat w nowym oknie o określonych wymiarach
+      window.open(
+        `https://www.twitch.tv/popout/${twitchChannel}/chat?popout=`,
+        'TwitchChatPopup',
         'width=400,height=600,resizable=yes,scrollbars=yes,status=no,location=no,toolbar=no'
       );
     }
@@ -174,13 +186,31 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
       {/* Kontener czatu */}
       <div className="flex-grow h-full">
         {/* Twitch Chat */}
-        {currentPlatform === 'twitch' && embedUrl && (
-          <iframe
-            src={embedUrl}
-            className="w-full h-full"
-            frameBorder="0"
-            allowFullScreen
-          />
+        {currentPlatform === 'twitch' && (
+          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+            <div className="bg-dark-300 p-6 rounded-lg max-w-md">
+              <h3 className="text-light-100 text-xl font-semibold mb-4">Chat Twitch</h3>
+              
+              <p className="text-light-300 mb-6">
+                Otwórz czat Twitch w osobnym oknie, aby móc wygodnie rozmawiać podczas oglądania streamu.
+              </p>
+              
+              <button 
+                onClick={openTwitchChat}
+                className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-full transition-colors"
+              >
+                Otwórz czat w nowym oknie <FaExternalLinkAlt size={14} />
+              </button>
+              
+              {/* Informacje debugowania - tylko w trybie deweloperskim */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-4 p-2 bg-dark-400 rounded text-xs text-light-400 text-left">
+                  <p>Debug: {debugInfo}</p>
+                  <p>Embed URL: {embedUrl || 'brak'}</p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
         
         {/* YouTube Chat - pokazujemy tylko przycisk do otwarcia w nowym oknie */}
@@ -205,7 +235,6 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
                 <div className="mt-4 p-2 bg-dark-400 rounded text-xs text-light-400 text-left">
                   <p>Debug: {debugInfo}</p>
                   <p>Video ID: {actualYoutubeVideoId || 'brak'}</p>
-                  <p>Embed URL: {embedUrl || 'brak'}</p>
                   <p>Chat URL: {youtubeChatUrl || 'brak'}</p>
                 </div>
               )}
