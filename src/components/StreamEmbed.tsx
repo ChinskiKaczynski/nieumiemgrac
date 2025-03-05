@@ -32,78 +32,50 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
     setCurrentPlatform(platform);
   }, [platform]);
 
-  // Funkcja do pobierania ID streamu YouTube
-  const fetchYoutubeStreamId = async () => {
-    if (currentPlatform !== 'youtube') return;
-    
-    setIsLoadingYoutubeId(true);
-    try {
-      console.log('Pobieranie ID streamu YouTube...');
-      // Pobierz ID aktualnego streamu lub najnowszego filmu
-      const streamId = await getLiveStreamId(youtubeChannel);
-      
-      // Jeśli mamy ID streamu, użyj go
-      if (streamId) {
-        console.log('Pobrano ID streamu YouTube:', streamId);
-        setYoutubeVideoId(streamId);
-        
-        // Przekaż ID streamu do komponentu nadrzędnego
-        if (onYoutubeVideoIdChange) {
-          onYoutubeVideoIdChange(streamId);
-        }
-      } else {
-        // Jeśli nie ma aktualnego streamu ani najnowszego filmu, użyj przykładowego ID
-        const fallbackId = 'dQw4w9WgXcQ'; // Rick Astley - Never Gonna Give You Up
-        console.log('Nie znaleziono streamu ani filmu, używam przykładowego ID:', fallbackId);
-        setYoutubeVideoId(fallbackId);
-        
-        // Przekaż ID streamu do komponentu nadrzędnego
-        if (onYoutubeVideoIdChange) {
-          onYoutubeVideoIdChange(fallbackId);
-        }
-      }
-    } catch (error) {
-      console.error('Błąd podczas pobierania ID streamu YouTube:', error);
-      
-      // W przypadku błędu, użyj przykładowego ID
-      const fallbackId = 'dQw4w9WgXcQ'; // Rick Astley - Never Gonna Give You Up
-      setYoutubeVideoId(fallbackId);
-      
-      // Przekaż ID streamu do komponentu nadrzędnego
-      if (onYoutubeVideoIdChange) {
-        onYoutubeVideoIdChange(fallbackId);
-      }
-    } finally {
-      setIsLoadingYoutubeId(false);
-    }
-  };
-
-  // Efekt do pobierania ID streamu YouTube przy montowaniu komponentu
+  // Efekt do pobierania ID streamu YouTube
   useEffect(() => {
-    // Pobierz ID streamu od razu, jeśli platforma to YouTube
-    if (currentPlatform === 'youtube') {
-      fetchYoutubeStreamId();
-    }
-  }, [currentPlatform, youtubeChannel]);
-
-  // Efekt do wykrywania, kiedy karta staje się aktywna
-  useEffect(() => {
-    // Funkcja obsługująca zdarzenie visibilitychange
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && currentPlatform === 'youtube') {
-        console.log('Karta stała się aktywna, odświeżam ID streamu YouTube...');
-        fetchYoutubeStreamId();
+    async function fetchYoutubeStreamId() {
+      if (currentPlatform === 'youtube') {
+        setIsLoadingYoutubeId(true);
+        try {
+          // Pobierz ID aktualnego streamu
+          const streamId = await getLiveStreamId(youtubeChannel);
+          
+          // Jeśli mamy ID streamu, użyj go
+          if (streamId) {
+            setYoutubeVideoId(streamId);
+            
+            // Przekaż ID streamu do komponentu nadrzędnego
+            if (onYoutubeVideoIdChange) {
+              onYoutubeVideoIdChange(streamId);
+            }
+          } else {
+            // Jeśli nie ma aktualnego streamu, użyj przykładowego ID
+            setYoutubeVideoId('zf2XF-259BA'); // Przykładowe ID - użyj tego, które podał użytkownik
+            
+            // Przekaż ID streamu do komponentu nadrzędnego
+            if (onYoutubeVideoIdChange) {
+              onYoutubeVideoIdChange('zf2XF-259BA');
+            }
+          }
+        } catch (error) {
+          console.error('Błąd podczas pobierania ID streamu YouTube:', error);
+          
+          // W przypadku błędu, użyj przykładowego ID
+          setYoutubeVideoId('zf2XF-259BA');
+          
+          // Przekaż ID streamu do komponentu nadrzędnego
+          if (onYoutubeVideoIdChange) {
+            onYoutubeVideoIdChange('zf2XF-259BA');
+          }
+        } finally {
+          setIsLoadingYoutubeId(false);
+        }
       }
-    };
+    }
 
-    // Dodaj nasłuchiwanie zdarzenia visibilitychange
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Funkcja czyszcząca
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [currentPlatform]);
+    fetchYoutubeStreamId();
+  }, [currentPlatform, youtubeChannel, onYoutubeVideoIdChange]);
 
   // Efekt do ustawiania URL streamu
   useEffect(() => {
@@ -129,16 +101,6 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
     if (onPlatformChange) {
       onPlatformChange(newPlatform);
     }
-    
-    // Jeśli zmieniamy na YouTube, pobierz ID streamu
-    if (newPlatform === 'youtube') {
-      fetchYoutubeStreamId();
-    }
-  };
-
-  // Przycisk do ręcznego odświeżania ID streamu YouTube
-  const handleRefreshYoutubeId = () => {
-    fetchYoutubeStreamId();
   };
 
   return (
@@ -168,22 +130,6 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
           </button>
         </div>
       )}
-      
-      {/* Przycisk do odświeżania ID streamu YouTube - wyświetlany tylko dla YouTube */}
-      {currentPlatform === 'youtube' && (
-        <div className="absolute top-4 left-4 z-10">
-          <button
-            onClick={handleRefreshYoutubeId}
-            className="px-3 py-2 rounded-full bg-dark-300 text-light-300 hover:bg-dark-200 transition-colors text-sm flex items-center"
-            title="Odśwież ID streamu"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Odśwież
-          </button>
-        </div>
-      )}
 
       {/* Kontener streama */}
       <div className="responsive-iframe-container bg-dark-400 overflow-hidden">
@@ -201,13 +147,6 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
           />
         ) : null}
       </div>
-      
-      {/* Wyświetlanie aktualnego ID streamu - tylko w trybie YouTube */}
-      {currentPlatform === 'youtube' && youtubeVideoId && (
-        <div className="absolute bottom-4 left-4 z-10 bg-dark-300 bg-opacity-80 px-3 py-1 rounded-md text-xs text-light-300">
-          ID streamu: {youtubeVideoId}
-        </div>
-      )}
     </div>
   );
 };

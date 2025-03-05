@@ -116,17 +116,14 @@ const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || 'UCuhEFa4jQBOa5UOAJ
 // Funkcja do sprawdzenia, czy kanał jest aktualnie na żywo
 export async function checkYouTubeLiveStatus(channelId: string = YOUTUBE_CHANNEL_ID): Promise<YouTubeLiveStream | null> {
   try {
-    console.log('Sprawdzam status streamu YouTube dla kanału:', channelId);
     const response = await axios.get(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=live&key=${YOUTUBE_API_KEY}`
     );
 
     const items = response.data.items as YouTubeSearchItem[];
-    console.log('Znaleziono streamów na żywo:', items.length);
     
     if (items.length > 0) {
       const liveStream = items[0];
-      console.log('Stream na żywo:', liveStream.id.videoId, liveStream.snippet.title);
       
       return {
         id: liveStream.id.videoId,
@@ -291,30 +288,15 @@ export function formatViewCount(count: number): string {
   return count.toString();
 }
 
-// Funkcja do pobierania ID aktualnego streamu na żywo lub najnowszego filmu
+// Funkcja do pobierania ID aktualnego streamu na żywo
 export async function getLiveStreamId(channelId: string = YOUTUBE_CHANNEL_ID): Promise<string | null> {
   try {
-    console.log('Pobieranie ID streamu YouTube dla kanału:', channelId);
-    
-    // Najpierw sprawdź, czy kanał jest aktualnie na żywo
     const liveStream = await checkYouTubeLiveStatus(channelId);
     
     if (liveStream) {
-      console.log('Kanał jest na żywo, używam ID streamu:', liveStream.id);
       return liveStream.id;
     }
     
-    console.log('Kanał nie jest na żywo, pobieram najnowszy film...');
-    
-    // Jeśli kanał nie jest na żywo, pobierz najnowszy film
-    const videos = await getYouTubeVideos(channelId, 1);
-    
-    if (videos.length > 0) {
-      console.log('Znaleziono najnowszy film:', videos[0].id, videos[0].title);
-      return videos[0].id;
-    }
-    
-    console.log('Nie znaleziono żadnych filmów, zwracam null');
     return null;
   } catch (error) {
     console.error('Błąd podczas pobierania ID streamu na żywo:', error);
