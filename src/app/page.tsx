@@ -14,18 +14,13 @@ const TWITCH_CHANNEL = 'nie_umiem_grac_jednak';
 const YOUTUBE_CHANNEL_ID = 'UCuhEFa4jQBOa5UOAJ52sa0g';
 
 // Domena, na której będzie osadzona strona (bez protokołu http/https)
-// Dla lokalnego developmentu używamy 'localhost'
-const SITE_DOMAIN = typeof window !== 'undefined' 
-  ? window.location.hostname 
-  : 'nieumiemgrac.pl';
+const SITE_DOMAIN = 'nieumiemgrac.pl';
 
 export default function Home() {
   // Stan współdzielony między komponentami streamu i czatu
   const [currentPlatform, setCurrentPlatform] = useState<'twitch' | 'youtube'>('twitch');
   // Stan do śledzenia, czy czat YouTube jest dostępny
   const [isYoutubeChatAvailable, setIsYoutubeChatAvailable] = useState(false);
-  // Stan do przechowywania ID streamu YouTube
-  const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
 
   // Funkcja do zmiany platformy
   const handlePlatformChange = (platform: 'twitch' | 'youtube') => {
@@ -35,11 +30,6 @@ export default function Home() {
   // Funkcja do aktualizacji stanu dostępności czatu YouTube
   const handleYoutubeChatAvailabilityChange = (isAvailable: boolean) => {
     setIsYoutubeChatAvailable(isAvailable);
-  };
-
-  // Funkcja do aktualizacji ID streamu YouTube
-  const handleYoutubeVideoIdChange = (videoId: string | null) => {
-    setYoutubeVideoId(videoId);
   };
 
   return (
@@ -103,7 +93,6 @@ export default function Home() {
                     youtubeChannel={YOUTUBE_CHANNEL_ID} 
                     platform={currentPlatform}
                     onPlatformChange={handlePlatformChange}
-                    onYoutubeVideoIdChange={handleYoutubeVideoIdChange}
                     hideControls={true}
                   />
                 </div>
@@ -112,7 +101,7 @@ export default function Home() {
                 <div className="unified-chat-container">
                   <ChatEmbed 
                     twitchChannel={TWITCH_CHANNEL} 
-                    youtubeVideoId={youtubeVideoId || undefined}
+                    youtubeVideoId="live_stream"
                     youtubeChannelId={YOUTUBE_CHANNEL_ID}
                     platform={currentPlatform}
                     onPlatformChange={handlePlatformChange}
