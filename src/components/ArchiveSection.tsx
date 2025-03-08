@@ -23,15 +23,24 @@ const ArchiveSection: React.FC = () => {
   const [platform, setPlatform] = useState<ArchivePlatform>('twitch');
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchVideos() {
       setIsLoading(true);
+      setError(null);
       
       try {
         if (platform === 'twitch') {
           // Pobierz VODy z Twitch
+          console.log('Pobieranie VODów z Twitch...');
           const twitchVideos = await getTwitchVideos();
+          console.log('Pobrano VODy z Twitch:', twitchVideos);
+          
+          if (twitchVideos.length === 0) {
+            console.log('Brak VODów z Twitch');
+            setError('Nie znaleziono żadnych VODów z Twitch. Spróbuj później lub sprawdź inną platformę.');
+          }
           
           const formattedVideos: VideoItem[] = twitchVideos.map(video => ({
             id: video.id,
@@ -47,7 +56,14 @@ const ArchiveSection: React.FC = () => {
           setVideos(formattedVideos);
         } else {
           // Pobierz VODy z YouTube
+          console.log('Pobieranie VODów z YouTube...');
           const youtubeVideos = await getYouTubeVideos();
+          console.log('Pobrano VODy z YouTube:', youtubeVideos);
+          
+          if (youtubeVideos.length === 0) {
+            console.log('Brak VODów z YouTube');
+            setError('Nie znaleziono żadnych VODów z YouTube. Spróbuj później lub sprawdź inną platformę.');
+          }
           
           const formattedVideos: VideoItem[] = youtubeVideos.map(video => ({
             id: video.id,
@@ -66,6 +82,7 @@ const ArchiveSection: React.FC = () => {
         }
       } catch (error) {
         console.error('Błąd podczas pobierania filmów:', error);
+        setError(`Wystąpił błąd podczas pobierania filmów: ${error instanceof Error ? error.message : 'Nieznany błąd'}`);
         setVideos([]);
       } finally {
         setIsLoading(false);
@@ -117,6 +134,11 @@ const ArchiveSection: React.FC = () => {
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center text-red-500 py-12">
+            <p>{error}</p>
+            <p className="mt-4 text-light-300">Spróbuj zmienić platformę lub odświeżyć stronę.</p>
           </div>
         ) : videos.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -177,6 +199,7 @@ const ArchiveSection: React.FC = () => {
         ) : (
           <div className="text-center text-light-300 py-12">
             <p>Brak dostępnych VOD-ów dla wybranej platformy.</p>
+            <p className="mt-4">Spróbuj zmienić platformę lub odświeżyć stronę.</p>
           </div>
         )}
         
