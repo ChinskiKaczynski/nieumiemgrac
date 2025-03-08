@@ -6,7 +6,7 @@ import Footer from '@/components/Footer';
 import { FaTwitch, FaYoutube, FaPlay, FaClock, FaEye, FaCalendarAlt, FaFilter, FaSearch, FaGamepad } from 'react-icons/fa';
 import Image from 'next/image';
 import { getTwitchVideos } from '@/lib/twitch';
-import { getYouTubeVideos, formatYouTubeDuration, formatViewCount } from '@/lib/youtube';
+import { getYouTubeCompletedLiveStreams, formatYouTubeDuration, formatViewCount } from '@/lib/youtube';
 
 // Typy danych
 interface VideoItem {
@@ -67,13 +67,13 @@ export default function ArchiwumPage() {
           
           setAvailableGames(['Wszystkie', ...new Set(games)]);
         } else {
-          // Pobierz VODy z YouTube
-          console.log('Pobieranie VODów z YouTube...');
-          const youtubeVideos = await getYouTubeVideos(undefined, 20);
-          console.log('Pobrano VODy z YouTube:', youtubeVideos);
+          // Pobierz zakończone transmisje z YouTube
+          console.log('Pobieranie zakończonych transmisji z YouTube...');
+          const youtubeVideos = await getYouTubeCompletedLiveStreams(undefined, 20);
+          console.log('Pobrano zakończone transmisje z YouTube:', youtubeVideos);
           
           if (youtubeVideos.length === 0) {
-            console.log('Brak VODów z YouTube');
+            console.log('Brak zakończonych transmisji z YouTube');
           }
           
           const formattedVideos: VideoItem[] = youtubeVideos.map(video => ({
@@ -82,7 +82,7 @@ export default function ArchiwumPage() {
             thumbnail: video.thumbnails.maxres?.url || 
                       video.thumbnails.standard?.url || 
                       video.thumbnails.high.url,
-            url: `https://youtube.com/watch?v=${video.id}`,
+            url: `https://www.youtube.com/live/${video.id}`,
             views: video.viewCount || 0,
             duration: formatYouTubeDuration(video.duration || 'PT0S'),
             date: new Date(video.publishedAt).toISOString().split('T')[0],

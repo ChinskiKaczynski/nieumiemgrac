@@ -213,6 +213,53 @@ export async function getYouTubeVideos(
   }
 }
 
+// Funkcja do pobierania zakończonych transmisji na żywo
+export async function getYouTubeCompletedLiveStreams(
+  channelId: string = YOUTUBE_CHANNEL_ID,
+  limit: number = 10
+): Promise<YouTubeVideo[]> {
+  try {
+    // Pobierz zakończone transmisje na żywo
+    const searchResponse = await axios.get(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=${limit * 2}&order=date&type=video&eventType=completed&key=${YOUTUBE_API_KEY}`
+    );
+
+    const videoIds = (searchResponse.data.items as YouTubeSearchItem[])
+      .map((item) => item.id.videoId)
+      .join(',');
+    
+    if (!videoIds) {
+      console.log('Nie znaleziono zakończonych transmisji na żywo');
+      return [];
+    }
+    
+    // Następnie pobierz szczegółowe informacje o filmach
+    const videosResponse = await axios.get(
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+    );
+
+    return (videosResponse.data.items as YouTubeVideoItem[])
+      .map((item) => ({
+        id: item.id,
+        title: item.snippet.title,
+        description: item.snippet.description,
+        publishedAt: item.snippet.publishedAt,
+        thumbnails: item.snippet.thumbnails,
+        channelTitle: item.snippet.channelTitle,
+        channelId: item.snippet.channelId,
+        liveBroadcastContent: item.snippet.liveBroadcastContent,
+        duration: item.contentDetails.duration,
+        viewCount: parseInt(item.statistics.viewCount, 10),
+        likeCount: parseInt(item.statistics.likeCount, 10),
+        commentCount: parseInt(item.statistics.commentCount, 10),
+      }))
+      .slice(0, limit);
+  } catch (error) {
+    console.error('Błąd podczas pobierania zakończonych transmisji YouTube:', error);
+    return [];
+  }
+}
+
 // Funkcja do pobierania popularnych filmów
 export async function getPopularYouTubeVideos(
   channelId: string = YOUTUBE_CHANNEL_ID,

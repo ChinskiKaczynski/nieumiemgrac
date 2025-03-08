@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { getLiveStreamId } from '@/lib/youtube';
 
 interface StreamEmbedProps {
   twitchChannel: string;
@@ -9,6 +10,7 @@ interface StreamEmbedProps {
   platform?: 'twitch' | 'youtube';
   onPlatformChange?: (platform: 'twitch' | 'youtube') => void;
   hideControls?: boolean;
+  onYoutubeVideoIdChange?: (videoId: string | null) => void; // Callback do przekazywania ID streamu YouTube
 }
 
 const StreamEmbed: React.FC<StreamEmbedProps> = ({
@@ -18,24 +20,81 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
   platform = 'twitch',
   onPlatformChange,
   hideControls = false,
+  onYoutubeVideoIdChange,
 }) => {
   const [embedUrl, setEmbedUrl] = useState('');
   const [currentPlatform, setCurrentPlatform] = useState(platform);
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Synchronizacja z zewnętrznym stanem
   useEffect(() => {
     setCurrentPlatform(platform);
   }, [platform]);
 
+  // Efekt do pobierania ID streamu YouTube
+  useEffect(() => {
+    async function fetchYoutubeStreamId() {
+      if (currentPlatform === 'youtube') {
+        setIsLoading(true);
+        try {
+          // Jeśli podano konkretny URL streamu, wyciągnij z niego ID
+          if (youtubeStreamUrl) {
+            const match = youtubeStreamUrl.match(/[?&]v=([^&]+)/);
+            if (match && match[1]) {
+              const videoId = match[1];
+              setYoutubeVideoId(videoId);
+              if (onYoutubeVideoIdChange) {
+                onYoutubeVideoIdChange(videoId);
+              }
+              return;
+            }
+          }
+          
+          // W przeciwnym razie pobierz ID aktualnego streamu
+          const streamId = await getLiveStreamId(youtubeChannel);
+          console.log('Pobrano ID streamu YouTube:', streamId);
+          
+          setYoutubeVideoId(streamId);
+          
+          // Przekaż ID streamu do komponentu nadrzędnego
+          if (onYoutubeVideoIdChange) {
+            onYoutubeVideoIdChange(streamId);
+          }
+        } catch (error) {
+          console.error('Błąd podczas pobierania ID streamu YouTube:', error);
+          setYoutubeVideoId(null);
+          if (onYoutubeVideoIdChange) {
+            onYoutubeVideoIdChange(null);
+          }
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+    
+    fetchYoutubeStreamId();
+  }, [currentPlatform, youtubeChannel, youtubeStreamUrl, onYoutubeVideoIdChange]);
+
+  // Efekt do aktualizacji URL streamu
   useEffect(() => {
     const hostname = window?.location?.hostname || 'localhost';
     const twitchUrl = `https://player.twitch.tv/?channel=${twitchChannel}&parent=${hostname}`;
     
-    // Używamy standardowego URL dla YouTube z ID kanału
-    const youtubeUrl = youtubeStreamUrl || `https://www.youtube.com/embed/live_stream?channel=${youtubeChannel}`;
+    let youtubeUrl;
+    if (youtubeVideoId) {
+      // Jeśli mamy konkretne ID streamu, użyj go
+      youtubeUrl = `https://www.youtube.com/embed/${youtubeVideoId}`;
+    } else if (youtubeStreamUrl) {
+      // Jeśli podano konkretny URL streamu, użyj go
+      youtubeUrl = youtubeStreamUrl;
+    } else {
+      // W przeciwnym razie użyj standardowego URL z ID kanału
+      youtubeUrl = `https://www.youtube.com/embed/live_stream?channel=${youtubeChannel}`;
+    }
     
     setEmbedUrl(currentPlatform === 'twitch' ? twitchUrl : youtubeUrl);
-  }, [twitchChannel, youtubeChannel, youtubeStreamUrl, currentPlatform]);
+  }, [twitchChannel, youtubeChannel, youtubeStreamUrl, youtubeVideoId, currentPlatform]);
 
   // Funkcja do zmiany platformy
   const handlePlatformChange = (newPlatform: 'twitch' | 'youtube') => {
@@ -75,7 +134,11 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
 
       {/* Kontener streama */}
       <div className="responsive-iframe-container bg-dark-400 overflow-hidden">
-        {embedUrl && (
+        {isLoading && currentPlatform === 'youtube' ? (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+          </div>
+        ) : embedUrl ? (
           <iframe
             src={embedUrl}
             className="responsive-iframe"
@@ -83,7 +146,7 @@ const StreamEmbed: React.FC<StreamEmbedProps> = ({
             allowFullScreen
             allow="autoplay; encrypted-media"
           />
-        )}
+        ) : null}
       </div>
     </div>
   );

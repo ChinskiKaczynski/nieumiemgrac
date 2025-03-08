@@ -2,12 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
-import { getLiveStreamId } from '@/lib/youtube';
 
 interface ChatEmbedProps {
   twitchChannel: string;
   youtubeVideoId?: string;
-  youtubeChannelId?: string;
   platform?: 'twitch' | 'youtube';
   onPlatformChange?: (platform: 'twitch' | 'youtube') => void;
   hideControls?: boolean;
@@ -17,7 +15,6 @@ interface ChatEmbedProps {
 const ChatEmbed: React.FC<ChatEmbedProps> = ({
   twitchChannel,
   youtubeVideoId,
-  youtubeChannelId,
   platform = 'twitch',
   onPlatformChange,
   hideControls = false,
@@ -26,7 +23,6 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
   const [currentPlatform, setCurrentPlatform] = useState(platform);
   const [youtubeChatUrl, setYoutubeChatUrl] = useState('');
   const [isYoutubeChatAvailable, setIsYoutubeChatAvailable] = useState(false);
-  const [actualYoutubeVideoId, setActualYoutubeVideoId] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>('');
   const [twitchChatError, setTwitchChatError] = useState(false);
   const twitchChatRef = useRef<HTMLIFrameElement>(null);
@@ -43,53 +39,22 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
     }
   }, [isYoutubeChatAvailable, onYoutubeChatAvailabilityChange]);
 
-  // Efekt do pobierania aktualnego ID streamu YouTube
+  // Efekt do aktualizacji URL czatu YouTube
   useEffect(() => {
-    async function fetchYoutubeStreamId() {
-      if (currentPlatform === 'youtube') {
+    if (currentPlatform === 'youtube') {
+      if (youtubeVideoId && youtubeVideoId !== 'live_stream') {
+        // Tworzymy URL czatu YouTube z ID streamu
+        const chatUrl = `https://www.youtube.com/live_chat?is_popout=1&v=${youtubeVideoId}`;
+        setYoutubeChatUrl(chatUrl);
+        setIsYoutubeChatAvailable(true);
+        setDebugInfo(`Używam ID streamu: ${youtubeVideoId} dla czatu YouTube`);
+      } else {
+        setYoutubeChatUrl('');
         setIsYoutubeChatAvailable(false);
-        try {
-          // Jeśli podano konkretne ID filmu, użyj go
-          if (youtubeVideoId && youtubeVideoId !== 'live_stream') {
-            setActualYoutubeVideoId(youtubeVideoId);
-            setDebugInfo(`Używam podanego ID: ${youtubeVideoId}`);
-          } else if (youtubeChannelId) {
-            // W przeciwnym razie pobierz ID aktualnego streamu
-            const streamId = await getLiveStreamId(youtubeChannelId);
-            if (streamId) {
-              setActualYoutubeVideoId(streamId);
-              setDebugInfo(`Pobrano ID streamu: ${streamId}`);
-            } else {
-              // Jeśli nie ma aktualnego streamu, użyj przykładowego ID
-              setActualYoutubeVideoId('oMp5K3NOuwM'); // Przykładowe ID
-              setDebugInfo('Brak aktualnego streamu, używam przykładowego ID');
-            }
-          } else {
-            // Jeśli nie podano ID kanału, użyj przykładowego ID
-            setActualYoutubeVideoId('oMp5K3NOuwM'); // Przykładowe ID
-            setDebugInfo('Brak ID kanału, używam przykładowego ID');
-          }
-        } catch (error) {
-          console.error('Błąd podczas pobierania ID streamu YouTube:', error);
-          // W przypadku błędu, użyj przykładowego ID
-          setActualYoutubeVideoId('oMp5K3NOuwM'); // Przykładowe ID
-          setDebugInfo(`Błąd: ${error}`);
-        }
+        setDebugInfo('Brak ID streamu YouTube');
       }
     }
-
-    fetchYoutubeStreamId();
-  }, [currentPlatform, youtubeVideoId, youtubeChannelId]);
-
-  // Funkcja do tworzenia URL czatu YouTube
-  useEffect(() => {
-    if (actualYoutubeVideoId) {
-      const fullYoutubeChatUrl = `https://www.youtube.com/live_chat?is_popout=1&v=${actualYoutubeVideoId}`;
-      setYoutubeChatUrl(fullYoutubeChatUrl);
-    } else {
-      setYoutubeChatUrl('');
-    }
-  }, [actualYoutubeVideoId]);
+  }, [currentPlatform, youtubeVideoId]);
 
   // Funkcja do zmiany platformy
   const handlePlatformChange = (newPlatform: 'twitch' | 'youtube') => {
@@ -108,6 +73,9 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
         'YouTubeChatPopup',
         'width=400,height=600,resizable=yes,scrollbars=yes,status=no,location=no,toolbar=no'
       );
+    } else {
+      // Jeśli nie mamy URL czatu, wyświetl komunikat
+      alert('Czat YouTube nie jest dostępny. Upewnij się, że stream jest aktywny.');
     }
   };
 
@@ -210,12 +178,15 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
               <h3 className="text-light-100 text-xl font-semibold mb-4">Chat YouTube</h3>
               
               <p className="text-light-300 mb-6">
-                Otwórz czat YouTube w osobnym oknie, aby móc wygodnie rozmawiać podczas oglądania streamu.
+                {isYoutubeChatAvailable 
+                  ? 'Otwórz czat YouTube w osobnym oknie, aby móc wygodnie rozmawiać podczas oglądania streamu.'
+                  : 'Czat YouTube nie jest dostępny. Upewnij się, że stream jest aktywny i ma włączony czat.'}
               </p>
               
               <button 
                 onClick={openYoutubeChat}
                 className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-full transition-colors"
+                disabled={!isYoutubeChatAvailable}
               >
                 Otwórz czat w nowym oknie <FaExternalLinkAlt size={14} />
               </button>
@@ -224,8 +195,9 @@ const ChatEmbed: React.FC<ChatEmbedProps> = ({
               {process.env.NODE_ENV === 'development' && (
                 <div className="mt-4 p-2 bg-dark-400 rounded text-xs text-light-400 text-left">
                   <p>Debug: {debugInfo}</p>
-                  <p>Video ID: {actualYoutubeVideoId || 'brak'}</p>
+                  <p>Video ID: {youtubeVideoId || 'brak'}</p>
                   <p>Chat URL: {youtubeChatUrl || 'brak'}</p>
+                  <p>Chat dostępny: {isYoutubeChatAvailable ? 'Tak' : 'Nie'}</p>
                 </div>
               )}
             </div>

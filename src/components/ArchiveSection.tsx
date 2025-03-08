@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FaTwitch, FaYoutube, FaPlay, FaClock, FaEye, FaGamepad } from 'react-icons/fa';
 import { getTwitchVideos } from '@/lib/twitch';
-import { getYouTubeVideos, formatYouTubeDuration, formatViewCount } from '@/lib/youtube';
+import { getYouTubeCompletedLiveStreams, formatYouTubeDuration, formatViewCount } from '@/lib/youtube';
 
 type ArchivePlatform = 'twitch' | 'youtube';
 
@@ -57,14 +57,14 @@ const ArchiveSection: React.FC = () => {
           
           setVideos(formattedVideos);
         } else {
-          // Pobierz VODy z YouTube
-          console.log('Pobieranie VODów z YouTube...');
-          const youtubeVideos = await getYouTubeVideos();
-          console.log('Pobrano VODy z YouTube:', youtubeVideos);
+          // Pobierz zakończone transmisje z YouTube
+          console.log('Pobieranie zakończonych transmisji z YouTube...');
+          const youtubeVideos = await getYouTubeCompletedLiveStreams();
+          console.log('Pobrano zakończone transmisje z YouTube:', youtubeVideos);
           
           if (youtubeVideos.length === 0) {
-            console.log('Brak VODów z YouTube');
-            setError('Nie znaleziono żadnych VODów z YouTube. Spróbuj później lub sprawdź inną platformę.');
+            console.log('Brak zakończonych transmisji z YouTube');
+            setError('Nie znaleziono żadnych zakończonych transmisji z YouTube. Spróbuj później lub sprawdź inną platformę.');
           }
           
           const formattedVideos: VideoItem[] = youtubeVideos.map(video => ({
@@ -73,7 +73,7 @@ const ArchiveSection: React.FC = () => {
             thumbnail: video.thumbnails.maxres?.url || 
                       video.thumbnails.standard?.url || 
                       video.thumbnails.high.url,
-            url: `https://youtube.com/watch?v=${video.id}`,
+            url: `https://www.youtube.com/live/${video.id}`,
             views: video.viewCount || 0,
             duration: formatYouTubeDuration(video.duration || 'PT0S'),
             date: new Date(video.publishedAt).toISOString().split('T')[0],
