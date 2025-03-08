@@ -82,7 +82,7 @@ export default function ArchiwumPage() {
             thumbnail: video.thumbnails.maxres?.url || 
                       video.thumbnails.standard?.url || 
                       video.thumbnails.high.url,
-            url: `https://www.youtube.com/live/${video.id}`,
+            url: `https://www.youtube.com/watch?v=${video.id}`,
             views: video.viewCount || 0,
             duration: formatYouTubeDuration(video.duration || 'PT0S'),
             date: new Date(video.publishedAt).toISOString().split('T')[0],
@@ -217,6 +217,7 @@ export default function ArchiwumPage() {
                     href={video.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    title={video.title} // Dodajemy tytuł jako tooltip
                     className="bg-dark-300 rounded-lg overflow-hidden shadow-lg hover:transform hover:scale-105 transition-transform duration-300"
                   >
                     {/* Thumbnail */}

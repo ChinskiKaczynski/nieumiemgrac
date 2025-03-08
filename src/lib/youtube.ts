@@ -188,6 +188,11 @@ export async function getYouTubeVideos(
       .map((item) => item.id.videoId)
       .join(',');
     
+    if (!videoIds) {
+      console.log('Nie znaleziono filmów YouTube');
+      return [];
+    }
+    
     // Następnie pobierz szczegółowe informacje o filmach
     const videosResponse = await axios.get(
       `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoIds}&key=${YOUTUBE_API_KEY}`
@@ -219,41 +224,63 @@ export async function getYouTubeCompletedLiveStreams(
   limit: number = 10
 ): Promise<YouTubeVideo[]> {
   try {
-    // Pobierz zakończone transmisje na żywo
+    // Najpierw pobierz wszystkie filmy z kanału
     const searchResponse = await axios.get(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=${limit * 2}&order=date&type=video&eventType=completed&key=${YOUTUBE_API_KEY}`
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=${limit * 2}&order=date&type=video&key=${YOUTUBE_API_KEY}`
     );
 
-    const videoIds = (searchResponse.data.items as YouTubeSearchItem[])
-      .map((item) => item.id.videoId)
-      .join(',');
+    const items = searchResponse.data.items as YouTubeSearchItem[];
     
-    if (!videoIds) {
-      console.log('Nie znaleziono zakończonych transmisji na żywo');
+    if (items.length === 0) {
+      console.log('Nie znaleziono filmów YouTube');
       return [];
     }
+    
+    // Pobierz ID wszystkich filmów
+    const videoIds = items.map((item) => item.id.videoId).join(',');
     
     // Następnie pobierz szczegółowe informacje o filmach
     const videosResponse = await axios.get(
       `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoIds}&key=${YOUTUBE_API_KEY}`
     );
 
-    return (videosResponse.data.items as YouTubeVideoItem[])
-      .map((item) => ({
-        id: item.id,
-        title: item.snippet.title,
-        description: item.snippet.description,
-        publishedAt: item.snippet.publishedAt,
-        thumbnails: item.snippet.thumbnails,
-        channelTitle: item.snippet.channelTitle,
-        channelId: item.snippet.channelId,
-        liveBroadcastContent: item.snippet.liveBroadcastContent,
-        duration: item.contentDetails.duration,
-        viewCount: parseInt(item.statistics.viewCount, 10),
-        likeCount: parseInt(item.statistics.likeCount, 10),
-        commentCount: parseInt(item.statistics.commentCount, 10),
-      }))
-      .slice(0, limit);
+    const videos = (videosResponse.data.items as YouTubeVideoItem[]).map((item) => ({
+      id: item.id,
+      title: item.snippet.title,
+      description: item.snippet.description,
+      publishedAt: item.snippet.publishedAt,
+      thumbnails: item.snippet.thumbnails,
+      channelTitle: item.snippet.channelTitle,
+      channelId: item.snippet.channelId,
+      liveBroadcastContent: item.snippet.liveBroadcastContent,
+      duration: item.contentDetails.duration,
+      viewCount: parseInt(item.statistics.viewCount, 10),
+      likeCount: parseInt(item.statistics.likeCount, 10),
+      commentCount: parseInt(item.statistics.commentCount, 10),
+    }));
+    
+    // Filtruj filmy, które mogą być zakończonymi transmisjami na żywo
+    // (np. mają "stream", "live", "na żywo" w tytule lub są dłuższe niż 30 minut)
+    const possibleStreams = videos.filter(video => {
+      const lowerTitle = video.title.toLowerCase();
+      const isDurationLong = video.duration && formatYouTubeDuration(video.duration).split(':').length > 2; // Dłuższe niż godzina
+      
+      return (
+        lowerTitle.includes('stream') ||
+        lowerTitle.includes('live') ||
+        lowerTitle.includes('na żywo') ||
+        lowerTitle.includes('transmisja') ||
+        isDurationLong
+      );
+    });
+    
+    // Jeśli znaleziono możliwe transmisje, zwróć je
+    if (possibleStreams.length > 0) {
+      return possibleStreams.slice(0, limit);
+    }
+    
+    // W przeciwnym razie zwróć wszystkie filmy
+    return videos.slice(0, limit);
   } catch (error) {
     console.error('Błąd podczas pobierania zakończonych transmisji YouTube:', error);
     return [];
