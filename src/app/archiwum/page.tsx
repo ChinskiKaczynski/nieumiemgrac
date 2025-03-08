@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { FaTwitch, FaYoutube, FaPlay, FaClock, FaEye, FaCalendarAlt, FaFilter, FaSearch } from 'react-icons/fa';
+import { FaTwitch, FaYoutube, FaPlay, FaClock, FaEye, FaCalendarAlt, FaFilter, FaSearch, FaGamepad } from 'react-icons/fa';
 import Image from 'next/image';
 import { getTwitchVideos } from '@/lib/twitch';
 import { getYouTubeVideos, formatYouTubeDuration, formatViewCount } from '@/lib/youtube';
@@ -21,18 +21,6 @@ interface VideoItem {
   game?: string;
 }
 
-// Przykładowe kategorie gier
-const GAME_CATEGORIES = [
-  'Wszystkie',
-  'Minecraft',
-  'Counter-Strike: Global Offensive',
-  'Valorant',
-  'Fortnite',
-  'The Witcher 3: Wild Hunt',
-  'Cyberpunk 2077',
-  'Hogwarts Legacy',
-];
-
 export default function ArchiwumPage() {
   const [platform, setPlatform] = useState<'twitch' | 'youtube'>('twitch');
   const [videos, setVideos] = useState<VideoItem[]>([]);
@@ -40,6 +28,7 @@ export default function ArchiwumPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [availableGames, setAvailableGames] = useState<string[]>([]);
 
   useEffect(() => {
     async function fetchVideos() {
@@ -66,10 +55,17 @@ export default function ArchiwumPage() {
             duration: video.duration, // Twitch zwraca już sformatowany czas
             date: new Date(video.created_at).toISOString().split('T')[0],
             platform: 'twitch',
-            game: video.type // Twitch nie zwraca bezpośrednio nazwy gry, ale możemy użyć typu jako zastępstwa
+            game: video.game_name || 'Nieznana gra'
           }));
           
           setVideos(formattedVideos);
+          
+          // Zbierz unikalne nazwy gier
+          const games = formattedVideos
+            .map(video => video.game)
+            .filter((game): game is string => !!game);
+          
+          setAvailableGames(['Wszystkie', ...new Set(games)]);
         } else {
           // Pobierz VODy z YouTube
           console.log('Pobieranie VODów z YouTube...');
@@ -91,14 +87,17 @@ export default function ArchiwumPage() {
             duration: formatYouTubeDuration(video.duration || 'PT0S'),
             date: new Date(video.publishedAt).toISOString().split('T')[0],
             platform: 'youtube'
+            // YouTube API nie zwraca bezpośrednio informacji o grze
           }));
           
           setVideos(formattedVideos);
+          setAvailableGames(['Wszystkie']);
         }
       } catch (error) {
         console.error('Błąd podczas pobierania filmów:', error);
         setError(`Wystąpił błąd podczas pobierania filmów: ${error instanceof Error ? error.message : 'Nieznany błąd'}`);
         setVideos([]);
+        setAvailableGames(['Wszystkie']);
       } finally {
         setIsLoading(false);
       }
@@ -110,7 +109,7 @@ export default function ArchiwumPage() {
   // Filtrowanie filmów
   const filteredVideos = videos.filter(video => {
     // Filtrowanie po grze
-    if (selectedGame && video.game !== selectedGame) {
+    if (selectedGame && selectedGame !== 'Wszystkie' && video.game !== selectedGame) {
       return false;
     }
     
@@ -164,16 +163,19 @@ export default function ArchiwumPage() {
                   </div>
                 </div>
                 
-                {/* Kategoria gry */}
+                {/* Jaka Gra - tylko dla Twitch */}
                 <div>
-                  <label className="block text-light-300 mb-2">Kategoria gry</label>
+                  <label className="block text-light-300 mb-2 flex items-center">
+                    <FaGamepad className="mr-2" /> Jaka Gra
+                  </label>
                   <select 
                     className="w-full bg-dark-200 text-light-100 py-2 px-4 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
                     value={selectedGame}
                     onChange={(e) => setSelectedGame(e.target.value)}
+                    disabled={platform === 'youtube' || availableGames.length <= 1}
                   >
-                    {GAME_CATEGORIES.map((game) => (
-                      <option key={game} value={game === 'Wszystkie' ? '' : game}>
+                    {availableGames.map((game) => (
+                      <option key={game} value={game}>
                         {game}
                       </option>
                     ))}
@@ -263,7 +265,8 @@ export default function ArchiwumPage() {
                         </span>
                       </div>
                       {video.game && (
-                        <div className="text-primary text-sm truncate">
+                        <div className="text-primary text-sm truncate flex items-center">
+                          <FaGamepad className="mr-1" size={14} />
                           {video.game}
                         </div>
                       )}

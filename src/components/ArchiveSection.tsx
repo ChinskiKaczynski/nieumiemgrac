@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { FaTwitch, FaYoutube, FaPlay, FaClock, FaEye } from 'react-icons/fa';
+import { FaTwitch, FaYoutube, FaPlay, FaClock, FaEye, FaGamepad } from 'react-icons/fa';
 import { getTwitchVideos } from '@/lib/twitch';
 import { getYouTubeVideos, formatYouTubeDuration, formatViewCount } from '@/lib/youtube';
 
@@ -17,6 +17,7 @@ interface VideoItem {
   duration: string;
   date: string;
   platform: ArchivePlatform;
+  game?: string;
 }
 
 const ArchiveSection: React.FC = () => {
@@ -50,7 +51,8 @@ const ArchiveSection: React.FC = () => {
             views: video.view_count,
             duration: video.duration, // Twitch zwraca już sformatowany czas
             date: new Date(video.created_at).toISOString().split('T')[0],
-            platform: 'twitch'
+            platform: 'twitch',
+            game: video.game_name || 'Nieznana gra'
           }));
           
           setVideos(formattedVideos);
@@ -76,6 +78,7 @@ const ArchiveSection: React.FC = () => {
             duration: formatYouTubeDuration(video.duration || 'PT0S'),
             date: new Date(video.publishedAt).toISOString().split('T')[0],
             platform: 'youtube'
+            // YouTube API nie zwraca bezpośrednio informacji o grze
           }));
           
           setVideos(formattedVideos);
@@ -185,13 +188,19 @@ const ArchiveSection: React.FC = () => {
                 {/* Video info */}
                 <div className="p-4">
                   <h3 className="text-light-100 font-medium line-clamp-2 mb-2">{video.title}</h3>
-                  <div className="flex justify-between text-light-400 text-sm">
+                  <div className="flex justify-between text-light-400 text-sm mb-2">
                     <span>{new Date(video.date).toLocaleDateString('pl-PL')}</span>
                     <span className="flex items-center">
                       <FaEye className="mr-1" size={14} />
                       {formatViews(video.views)}
                     </span>
                   </div>
+                  {video.game && (
+                    <div className="text-primary text-sm truncate flex items-center">
+                      <FaGamepad className="mr-1" size={14} />
+                      {video.game}
+                    </div>
+                  )}
                 </div>
               </a>
             ))}

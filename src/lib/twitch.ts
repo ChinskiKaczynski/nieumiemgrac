@@ -32,6 +32,8 @@ export interface TwitchVideo {
   language: string;
   type: string;
   duration: string;
+  game_id?: string;
+  game_name?: string;
 }
 
 export interface TwitchClip {
@@ -63,6 +65,12 @@ export interface TwitchUser {
   offline_image_url: string;
   view_count: number;
   created_at: string;
+}
+
+export interface TwitchGame {
+  id: string;
+  name: string;
+  box_art_url: string;
 }
 
 // Konfiguracja
@@ -151,6 +159,31 @@ export async function getTwitchUserInfo(channelName: string = TWITCH_CHANNEL_NAM
   }
 }
 
+// Funkcja do pobierania informacji o grze
+export async function getTwitchGameInfo(gameId: string): Promise<TwitchGame | null> {
+  try {
+    const token = await getTwitchAccessToken();
+    
+    const response = await axios.get(`https://api.twitch.tv/helix/games?id=${gameId}`, {
+      headers: {
+        'Client-ID': TWITCH_CLIENT_ID,
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const games = response.data.data;
+    
+    if (games.length > 0) {
+      return games[0] as TwitchGame;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Błąd podczas pobierania informacji o grze Twitch:', error);
+    return null;
+  }
+}
+
 // Funkcja do pobierania ostatnich VOD-ów
 export async function getTwitchVideos(
   channelName: string = TWITCH_CHANNEL_NAME,
@@ -174,7 +207,29 @@ export async function getTwitchVideos(
       }
     );
 
-    return response.data.data as TwitchVideo[];
+    const videos = response.data.data as TwitchVideo[];
+    
+    // Pobierz informacje o grach dla każdego VOD-a
+    const videosWithGameInfo = await Promise.all(
+      videos.map(async (video) => {
+        if (video.game_id) {
+          try {
+            const gameInfo = await getTwitchGameInfo(video.game_id);
+            if (gameInfo) {
+              return {
+                ...video,
+                game_name: gameInfo.name
+              };
+            }
+          } catch (error) {
+            console.error(`Błąd podczas pobierania informacji o grze dla VOD-a ${video.id}:`, error);
+          }
+        }
+        return video;
+      })
+    );
+    
+    return videosWithGameInfo;
   } catch (error) {
     console.error('Błąd podczas pobierania VOD-ów Twitch:', error);
     return [];
